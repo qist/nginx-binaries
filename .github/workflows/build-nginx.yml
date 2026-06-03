@@ -28,14 +28,17 @@ jobs:
 
       - name: Get latest nginx release from GitHub
         id: get-nginx-version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -n "${{ github.event.inputs.version }}" ]; then
             LATEST_TAG="release-${{ github.event.inputs.version }}"
           else
-            # 使用 GitHub CLI 获取最新版本
+            # 使用 GitHub CLI 获取最新版本（更可靠）
             if command -v gh &> /dev/null; then
               LATEST_TAG=$(gh release list --repo nginx/nginx --limit 1 --json tagName --jq '.[0].tagName')
             else
+              # 回退到 curl + jq 方式
               RESPONSE=$(curl -s https://api.github.com/repos/nginx/nginx/tags)
               if echo "$RESPONSE" | jq 'type' | grep -q array; then
                 LATEST_TAG=$(echo "$RESPONSE" | jq -r '.[0].name')
