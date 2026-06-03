@@ -174,11 +174,11 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build with Docker (Alpine)
-        if: matrix.use-docker && matrix.os == 'alpine'
+        if: matrix.use-docker == 'true' && matrix.os == 'alpine'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            sh -c "apk update apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl perl-IPC-Cmd automake libtoolapk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl perl-IPC-Cmd automake libtool apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl perl-IPC-Cmd automake libtool cmake && \
+            sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl automake libtool cmake && 
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
@@ -251,7 +251,7 @@ jobs:
           docker cp $(docker ps -l -q):/tmp/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz .
 
       - name: Build with Docker (Red Hat)
-        if: matrix.use-docker && matrix.os == 'redhat'
+        if: matrix.use-docker == 'true' && matrix.os == 'redhat'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
@@ -516,7 +516,7 @@ jobs:
             cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed .. && \
             cmake --build . --config Release --target brotlienc && \
             make install && \
-            cd ../../../../nginx && \
+            cd ../../../.. && \
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
@@ -619,7 +619,8 @@ jobs:
             --group=nginx
           
           # 初始化 Visual Studio 环境
-          & "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          & "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch x64
           
           nmake
           nmake install
