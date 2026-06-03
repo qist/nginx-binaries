@@ -169,12 +169,16 @@ jobs:
         with:
           platforms: linux/arm64
 
+      - name: Set Docker Buildx
+        if: matrix.use-docker == 'true'
+        uses: docker/setup-buildx-action@v3
+
       - name: Build with Docker (Alpine)
         if: matrix.use-docker && matrix.os == 'alpine'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch && \
+            sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
@@ -194,7 +198,7 @@ jobs:
             git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
             git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
             cd nginx && \
-            patch -p1 < ../nginx_upstream_check_module/check_1.12.1+.patch && \
+            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
             ./auto/configure \
               --prefix=/tmp/nginx \
               --with-compat \
@@ -247,7 +251,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch && \
+            bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch libxml2-devel libxslt-devel && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
@@ -267,7 +271,7 @@ jobs:
             git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
             git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
             cd nginx && \
-            patch -p1 < ../nginx_upstream_check_module/check_1.12.1+.patch && \
+            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
             ./auto/configure \
               --prefix=/tmp/nginx \
               --with-compat \
@@ -320,7 +324,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           sudo apt-get update
-          sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch
+          sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev libxml2-dev libxslt1-dev
           
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -342,7 +346,7 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
-          patch -p1 < ../nginx_upstream_check_module/check_1.12.1+.patch
+          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
@@ -396,7 +400,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch && \
+            bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
@@ -416,7 +420,7 @@ jobs:
             git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
             git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
             cd nginx && \
-            patch -p1 < ../nginx_upstream_check_module/check_1.12.1+.patch && \
+            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
             ./auto/configure \
               --prefix=/tmp/nginx \
               --with-compat \
@@ -468,7 +472,7 @@ jobs:
         if: matrix.os == 'macos'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          brew install pcre zlib
+          brew install pcre zlib libxml2 libxslt
           
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -490,7 +494,7 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
-          patch -p1 < ../nginx_upstream_check_module/check_1.12.1+.patch
+          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
@@ -528,7 +532,10 @@ jobs:
         if: matrix.os == 'windows'
         run: |
           $VERSION = "${{ needs.check-version.outputs.new_version }}"
-          choco install -y winflexbison3 pcre zlib patch
+          choco install -y winflexbison3 pcre zlib patch libxml2 libxslt
+          
+          # 安装 Visual Studio Build Tools
+          choco install -y visualstudio2022-buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
           
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -550,7 +557,7 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
-          Get-Content ..\nginx_upstream_check_module\check_1.12.1+.patch | patch -p1
+          Get-Content ..\nginx_upstream_check_module\check_1.20.1+.patch | patch -p1
           .\auto\configure `
             --prefix=C:\nginx `
             --with-compat `
@@ -577,6 +584,10 @@ jobs:
             --add-module=..\ngx-fancyindex `
             --user=nginx `
             --group=nginx
+          
+          # 初始化 Visual Studio 环境
+          & "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+          
           nmake
           nmake install
           cd C:\
