@@ -139,7 +139,7 @@ jobs:
             runs-on: ubuntu-latest
             suffix: alpine_arm64
             use-docker: true
-            docker-image: arm64v8/alpine:latest
+            docker-image: alpine:latest
 
           # macOS amd64
           - os: macos
@@ -175,6 +175,7 @@ jobs:
             sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
+            git clone --depth=1 --recursive https://github.com/openresty/ngx_devel_kit.git && \
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git && \
             git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git && \
@@ -216,6 +217,7 @@ jobs:
               --with-stream_ssl_module \
               --with-stream_realip_module \
               --with-openssl=/workspace/quictls \
+              --add-module=/workspace/ngx_devel_kit \
               --add-module=/workspace/set-misc-nginx-module \
               --add-module=/workspace/ngx_http_substitutions_filter_module \
               --add-module=/workspace/nginx-http-auth-digest \
@@ -246,6 +248,7 @@ jobs:
             bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
+            git clone --depth=1 --recursive https://github.com/openresty/ngx_devel_kit.git && \
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git && \
             git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git && \
@@ -287,6 +290,7 @@ jobs:
               --with-stream_ssl_module \
               --with-stream_realip_module \
               --with-openssl=/workspace/quictls \
+              --add-module=/workspace/ngx_devel_kit \
               --add-module=/workspace/set-misc-nginx-module \
               --add-module=/workspace/ngx_http_substitutions_filter_module \
               --add-module=/workspace/nginx-http-auth-digest \
@@ -318,6 +322,7 @@ jobs:
           
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
+          git clone --depth=1 --recursive https://github.com/openresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
           git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
@@ -360,6 +365,7 @@ jobs:
             --with-stream_ssl_module \
             --with-stream_realip_module \
             --with-openssl=../quictls \
+            --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
             --add-module=../nginx-http-auth-digest \
@@ -391,6 +397,7 @@ jobs:
             bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
+            git clone --depth=1 --recursive https://github.com/openresty/ngx_devel_kit.git && \
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git && \
             git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git && \
@@ -432,6 +439,7 @@ jobs:
               --with-stream_ssl_module \
               --with-stream_realip_module \
               --with-openssl=/workspace/quictls \
+              --add-module=/workspace/ngx_devel_kit \
               --add-module=/workspace/set-misc-nginx-module \
               --add-module=/workspace/ngx_http_substitutions_filter_module \
               --add-module=/workspace/nginx-http-auth-digest \
@@ -462,6 +470,7 @@ jobs:
           
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
+          git clone --depth=1 --recursive https://github.com/openresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
           git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
@@ -489,6 +498,7 @@ jobs:
             --with-http_stub_status_module \
             --with-http_realip_module \
             --with-openssl=../quictls \
+            --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
             --add-module=../nginx-http-auth-digest \
@@ -520,6 +530,7 @@ jobs:
           
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
+          git clone --depth=1 --recursive https://github.com/openresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
           git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
