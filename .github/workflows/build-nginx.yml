@@ -93,7 +93,7 @@ jobs:
             runs-on: ubuntu-latest
             suffix: ubuntu_arm64
             use-docker: true
-            docker-image: arm64v8/ubuntu:22.04
+            docker-image: ubuntu:22.04
 
           # Debian amd64
           - os: debian
@@ -107,7 +107,7 @@ jobs:
             runs-on: ubuntu-latest
             suffix: debian_arm64
             use-docker: true
-            docker-image: arm64v8/debian:12
+            docker-image: debian:12
 
           # Red Hat amd64
           - os: redhat
@@ -115,7 +115,7 @@ jobs:
             runs-on: ubuntu-latest
             suffix: redhat_amd64
             use-docker: true
-            docker-image: registry.access.redhat.com/ubi8/ubi:latest
+            docker-image: rockylinux:8
             
           # Red Hat arm64 (使用 QEMU)
           - os: redhat
@@ -123,7 +123,7 @@ jobs:
             runs-on: ubuntu-latest
             suffix: redhat_arm64
             use-docker: true
-            docker-image: arm64v8/centos:stream9
+            docker-image: rockylinux:8
 
           # Alpine amd64
           - os: alpine
@@ -178,7 +178,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev && \
+            sh -c "apk update apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl perl-IPC-Cmd automake libtoolapk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl perl-IPC-Cmd automake libtool apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl perl-IPC-Cmd automake libtool cmake && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
@@ -196,8 +196,12 @@ jobs:
             git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
             git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
             git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
-            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
-            cd nginx && \
+            cd ngx_brotli/deps/brotli && \
+            mkdir -p out && cd out && \
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed .. && \
+            cmake --build . --config Release --target brotlienc && \
+            make install && \
+            cd ../../../../nginx && \
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
             ./auto/configure \
               --prefix=/tmp/nginx \
@@ -251,7 +255,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch libxml2-devel libxslt-devel && \
+            bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch libxml2-devel libxslt-devel perl perl-IPC-Cmd cmake && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
@@ -268,9 +272,14 @@ jobs:
             git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
             git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
             git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
-            cd nginx && \
+            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
+            cd ngx_brotli/deps/brotli && \
+            mkdir -p out && cd out && \
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed .. && \
+            cmake --build . --config Release --target brotlienc && \
+            make install && \
+            cd ../../../../nginx && \
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
             ./auto/configure \
               --prefix=/tmp/nginx \
@@ -324,7 +333,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           sudo apt-get update
-          sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev libxml2-dev libxslt1-dev
+          sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev cmake
           
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -343,6 +352,12 @@ jobs:
           git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
           git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
           git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
+          cd ngx_brotli/deps/brotli
+          mkdir -p out && cd out
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
+          cmake --build . --config Release --target brotlienc
+          make install
+          cd ../../../..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
@@ -400,7 +415,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev && \
+            bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev cmake && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
@@ -417,9 +432,14 @@ jobs:
             git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
             git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
             git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
-            cd nginx && \
+            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
+            cd ngx_brotli/deps/brotli && \
+            mkdir -p out && cd out && \
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed .. && \
+            cmake --build . --config Release --target brotlienc && \
+            make install && \
+            cd ../../../../nginx && \
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
             ./auto/configure \
               --prefix=/tmp/nginx \
@@ -489,8 +509,14 @@ jobs:
           git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
           git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
           git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
-          git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
-          git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
+          git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
+            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
+            cd ngx_brotli/deps/brotli && \
+            mkdir -p out && cd out && \
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed .. && \
+            cmake --build . --config Release --target brotlienc && \
+            make install && \
+            cd ../../../../nginx && \
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
@@ -554,6 +580,12 @@ jobs:
           git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
           git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
           git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
+          cd ngx_brotli/deps/brotli
+          mkdir -p out && cd out
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
+          cmake --build . --config Release --target brotlienc
+          make install
+          cd ../../../..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
@@ -567,6 +599,7 @@ jobs:
             --with-http_stub_status_module `
             --with-http_realip_module `
             --with-openssl=..\quictls `
+            --add-module=..\ngx_devel_kit `
             --add-module=..\set-misc-nginx-module `
             --add-module=..\ngx_http_substitutions_filter_module `
             --add-module=..\nginx-http-auth-digest `
@@ -622,7 +655,6 @@ jobs:
             
             ## Included Modules
             - HTTP/3 (QUIC) support via QuicTLS
-            - Brotli compression
             - Headers more
             - VTS (Virtual host traffic status)
             - And more...
