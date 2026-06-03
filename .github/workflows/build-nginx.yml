@@ -590,6 +590,10 @@ jobs:
           cd ..\..\..\..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
 
+          # 初始化 Visual Studio 环境（必须在 configure 之前）
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          & "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64
+
           cd nginx
           Get-Content ..\nginx_upstream_check_module\check_1.20.1+.patch | patch -p1
           .\auto\configure `
@@ -619,11 +623,7 @@ jobs:
             --add-module=..\ngx-fancyindex `
             --user=nginx `
             --group=nginx
-          
-          # 初始化 Visual Studio 环境
-          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
-          & "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64
-          
+
           nmake
           nmake install
           cd C:\
