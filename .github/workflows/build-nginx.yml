@@ -86,6 +86,7 @@ jobs:
             arch: amd64
             runs-on: ubuntu-latest
             suffix: ubuntu_amd64
+            use-docker: false
             
           # Ubuntu arm64 (使用 QEMU)
           - os: ubuntu
@@ -99,6 +100,7 @@ jobs:
           - os: debian
             arch: amd64
             runs-on: ubuntu-latest
+            use-docker: false
             suffix: debian_amd64
             
           # Debian arm64 (使用 QEMU)
@@ -164,17 +166,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set QEMU for cross-compilation
-        if: matrix.arch == 'arm64' && matrix.use-docker == 'true'
+        if: matrix.arch == 'arm64' && matrix.use-docker
         uses: docker/setup-qemu-action@v3
         with:
           platforms: linux/arm64
 
       - name: Set Docker Buildx
-        if: matrix.use-docker == 'true'
+        if: matrix.use-docker
         uses: docker/setup-buildx-action@v3
 
       - name: Build with Docker (Alpine)
-        if: matrix.use-docker == 'true' && matrix.os == 'alpine'
+        if: matrix.use-docker && matrix.os == 'alpine'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
@@ -247,11 +249,10 @@ jobs:
               --group=nginx && \
             make -j$(nproc) && \
             make install && \
-            cd /tmp && tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
-          docker cp $(docker ps -l -q):/tmp/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz .
+            cd /tmp && tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
 
       - name: Build with Docker (Red Hat)
-        if: matrix.use-docker == 'true' && matrix.os == 'redhat'
+        if: matrix.use-docker && matrix.os == 'redhat'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
@@ -325,11 +326,10 @@ jobs:
               --group=nginx && \
             make -j$(nproc) && \
             make install && \
-            cd /tmp && tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
-          docker cp $(docker ps -l -q):/tmp/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz .
+            cd /tmp && tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
 
       - name: Build directly (Ubuntu/Debian)
-        if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && matrix.use-docker != 'true'
+        if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && !matrix.use-docker
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           sudo apt-get update
@@ -411,7 +411,7 @@ jobs:
           cp nginx_${VERSION}_${{ matrix.suffix }}.tar.gz $GITHUB_WORKSPACE
 
       - name: Build with Docker (Ubuntu/Debian arm64)
-        if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && matrix.use-docker == 'true'
+        if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && matrix.use-docker
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
@@ -485,14 +485,13 @@ jobs:
               --group=nginx && \
             make -j$(nproc) && \
             make install && \
-            cd /tmp && tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
-          docker cp $(docker ps -l -q):/tmp/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz .
+            cd /tmp && tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
 
       - name: Build macOS
         if: matrix.os == 'macos'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          brew install pcre zlib libxml2 libxslt
+          brew install pcre zlib libxml2 libxslt cmake
           
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -558,7 +557,7 @@ jobs:
         if: matrix.os == 'windows'
         run: |
           $VERSION = "${{ needs.check-version.outputs.new_version }}"
-          choco install -y winflexbison3 pcre zlib patch libxml2 libxslt
+          choco install -y winflexbison3 pcre zlib patch libxml2 libxslt cmake
           
           # 安装 Visual Studio Build Tools
           choco install -y visualstudio2022-buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
@@ -584,10 +583,10 @@ jobs:
           mkdir -p out && cd out
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
           cmake --build . --config Release --target brotlienc
-          make install
+          cmake --install . --config Release
           cd ../../../..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
-          
+
           cd nginx
           Get-Content ..\nginx_upstream_check_module\check_1.20.1+.patch | patch -p1
           .\auto\configure `
