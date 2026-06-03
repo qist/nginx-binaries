@@ -574,9 +574,8 @@ jobs:
           cd ngx_brotli\deps\brotli
           New-Item -ItemType Directory -Force -Path out | Out-Null
           cd out
-          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
           cmake --build . --config Release --target brotlienc
-          cmake --install . --config Release
           cd ..\..\..\..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
 
@@ -612,8 +611,13 @@ jobs:
             --add-module=..\ngx_brotli `
             --add-module=..\ngx-fancyindex
 
+          if ($LASTEXITCODE -ne 0) { Write-Error "configure failed"; exit 1 }
+          if (-not (Test-Path "Makefile")) { Write-Error "Makefile not found after configure"; exit 1 }
+
           nmake
+          if ($LASTEXITCODE -ne 0) { Write-Error "nmake failed"; exit 1 }
           nmake install
+          if ($LASTEXITCODE -ne 0) { Write-Error "nmake install failed"; exit 1 }
           cd C:\
           Compress-Archive -Path nginx -DestinationPath nginx_${VERSION}_${{ matrix.suffix }}.zip
           cp C:\nginx_${VERSION}_${{ matrix.suffix }}.zip $env:GITHUB_WORKSPACE
