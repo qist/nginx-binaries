@@ -4,7 +4,12 @@ on:
   schedule:
     - cron: '0 0 * * *'  # 每天凌晨检查
   workflow_dispatch:
-    
+    inputs:
+      version:
+        description: 'Nginx version to build (e.g., 1.31.1)'
+        required: false
+        default: ''
+
 permissions:
   contents: write
 
@@ -19,12 +24,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 获取所有历史记录
+          fetch-depth: 0
 
       - name: Get latest nginx release from GitHub
         id: get-nginx-version
         run: |
-          LATEST_TAG=$(curl -s https://api.github.com/repos/nginx/nginx/tags | jq -r '.[0].name')
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            LATEST_TAG="release-${{ github.event.inputs.version }}"
+          else
+            # 使用 GitHub CLI 获取最新版本
+            if command -v gh &> /dev/null; then
+              LATEST_TAG=$(gh release list --repo nginx/nginx --limit 1 --json tagName --jq '.[0].tagName')
+            else
+              RESPONSE=$(curl -s https://api.github.com/repos/nginx/nginx/tags)
+              if echo "$RESPONSE" | jq 'type' | grep -q array; then
+                LATEST_TAG=$(echo "$RESPONSE" | jq -r '.[0].name')
+              else
+                LATEST_TAG=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
+              fi
+            fi
+          fi
+          
+          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
+            echo "Error: Failed to get latest nginx version"
+            exit 1
+          fi
+          
           echo "latest_nginx_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest nginx tag: $LATEST_TAG"
 
@@ -53,29 +78,35 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Ubuntu
+          # Ubuntu amd64
           - os: ubuntu
             arch: amd64
             runs-on: ubuntu-latest
             suffix: ubuntu_amd64
             
+          # Ubuntu arm64 (使用 QEMU)
           - os: ubuntu
             arch: arm64
             runs-on: ubuntu-latest
             suffix: ubuntu_arm64
+            use-docker: true
+            docker-image: arm64v8/ubuntu:22.04
 
-          # Debian
+          # Debian amd64
           - os: debian
             arch: amd64
             runs-on: ubuntu-latest
             suffix: debian_amd64
             
+          # Debian arm64 (使用 QEMU)
           - os: debian
             arch: arm64
             runs-on: ubuntu-latest
             suffix: debian_arm64
+            use-docker: true
+            docker-image: arm64v8/debian:12
 
-          # Red Hat (兼容 CentOS, Fedora, Rocky Linux, AlmaLinux)
+          # Red Hat amd64
           - os: redhat
             arch: amd64
             runs-on: ubuntu-latest
@@ -83,14 +114,15 @@ jobs:
             use-docker: true
             docker-image: registry.access.redhat.com/ubi8/ubi:latest
             
+          # Red Hat arm64 (使用 QEMU)
           - os: redhat
             arch: arm64
             runs-on: ubuntu-latest
             suffix: redhat_arm64
             use-docker: true
-            docker-image: registry.access.redhat.com/ubi8/ubi:latest
-            
-          # Alpine (musl)
+            docker-image: arm64v8/centos:stream9
+
+          # Alpine amd64
           - os: alpine
             arch: amd64
             runs-on: ubuntu-latest
@@ -98,6 +130,7 @@ jobs:
             use-docker: true
             docker-image: alpine:latest
             
+          # Alpine arm64 (使用 QEMU)
           - os: alpine
             arch: arm64
             runs-on: ubuntu-latest
@@ -105,43 +138,37 @@ jobs:
             use-docker: true
             docker-image: arm64v8/alpine:latest
 
-          # macOS
+          # macOS amd64
           - os: macos
             arch: amd64
             runs-on: macos-13
             suffix: macos_amd64
             
+          # macOS arm64 (原生 Apple Silicon)
           - os: macos
             arch: arm64
             runs-on: macos-14
             suffix: macos_arm64
 
-          # Windows
+          # Windows amd64
           - os: windows
             arch: amd64
             runs-on: windows-latest
             suffix: windows_amd64
-            
-          - os: windows
-            arch: arm64
-            runs-on: windows-latest
-            suffix: windows_arm64
-
-          # FreeBSD (使用 cross-compile 或原生环境)
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set QEMU for cross-compilation
-        if: matrix.arch == 'arm64' && matrix.os != 'macos'
+        if: matrix.arch == 'arm64' && matrix.use-docker == 'true'
         uses: docker/setup-qemu-action@v3
 
       - name: Build with Docker (Alpine)
         if: matrix.use-docker && matrix.os == 'alpine'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          docker run --rm -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
+          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
             sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
@@ -212,7 +239,7 @@ jobs:
         if: matrix.use-docker && matrix.os == 'redhat'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          docker run --rm -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
+          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
             bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch && \
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
@@ -279,74 +306,12 @@ jobs:
             cd /tmp && tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
           docker cp $(docker ps -l -q):/tmp/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz .
 
-      - name: Build with Docker (FreeBSD)
-        if: matrix.use-docker && matrix.os == 'freebsd'
-        run: |
-          VERSION=${{ needs.check-version.outputs.new_version }}
-          docker run --rm -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            sh -c "pkg update && pkg install -y gmake pcre zlib git patch && \
-            git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
-            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git && \
-            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git && \
-            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git && \
-            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git && \
-            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git && \
-            git clone --depth=1 --recursive https://github.com/wdaike/ngx_upstream_jdomain.git && \
-            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
-            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
-            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
-            cd nginx && \
-            patch -p1 < ../nginx_upstream_check_module/check_1.12.1+.patch && \
-            ./auto/configure \
-              --prefix=/tmp/nginx \
-              --with-compat \
-              --with-pcre-jit \
-              --with-http_ssl_module \
-              --with-http_v3_module \
-              --with-http_stub_status_module \
-              --with-http_realip_module \
-              --with-openssl=/workspace/quictls \
-              --add-module=/workspace/set-misc-nginx-module \
-              --add-module=/workspace/ngx_http_substitutions_filter_module \
-              --add-module=/workspace/nginx-http-auth-digest \
-              --add-module=/workspace/nginx_upstream_check_module \
-              --add-module=/workspace/ngx_cache_purge \
-              --add-module=/workspace/nginx-upsync-module \
-              --add-module=/workspace/echo-nginx-module \
-              --add-module=/workspace/mod_zip \
-              --add-module=/workspace/ngx_upstream_jdomain \
-              --add-module=/workspace/nginx-upstream-dynamic-servers \
-              --add-module=/workspace/headers-more-nginx-module \
-              --add-module=/workspace/nginx-module-vts \
-              --add-module=/workspace/nginx-dav-ext-module \
-              --add-module=/workspace/ngx_brotli \
-              --add-module=/workspace/ngx-fancyindex \
-              --user=nginx \
-              --group=nginx && \
-            gmake -j$(nproc) && \
-            gmake install && \
-            cd /tmp && tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
-          docker cp $(docker ps -l -q):/tmp/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz .
-
       - name: Build directly (Ubuntu/Debian)
-        if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && (matrix.use-docker != true)
+        if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && matrix.use-docker != 'true'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           sudo apt-get update
           sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch
-          
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-            export CC=aarch64-linux-gnu-gcc
-            export CXX=aarch64-linux-gnu-g++
-          fi
           
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -415,6 +380,77 @@ jobs:
           tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/
           cp nginx_${VERSION}_${{ matrix.suffix }}.tar.gz $GITHUB_WORKSPACE
 
+      - name: Build with Docker (Ubuntu/Debian arm64)
+        if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && matrix.use-docker == 'true'
+        run: |
+          VERSION=${{ needs.check-version.outputs.new_version }}
+          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
+            bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch && \
+            git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
+            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
+            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
+            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git && \
+            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git && \
+            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git && \
+            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git && \
+            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git && \
+            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git && \
+            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git && \
+            git clone --depth=1 --recursive https://github.com/wdaike/ngx_upstream_jdomain.git && \
+            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git && \
+            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
+            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
+            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
+            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
+            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
+            cd nginx && \
+            patch -p1 < ../nginx_upstream_check_module/check_1.12.1+.patch && \
+            ./auto/configure \
+              --prefix=/tmp/nginx \
+              --with-compat \
+              --with-pcre-jit \
+              --with-http_ssl_module \
+              --with-http_v3_module \
+              --with-http_stub_status_module \
+              --with-http_realip_module \
+              --with-http_gzip_static_module \
+              --with-http_sub_module \
+              --with-http_addition_module \
+              --with-http_dav_module \
+              --with-http_flv_module \
+              --with-http_mp4_module \
+              --with-http_gunzip_module \
+              --with-http_random_index_module \
+              --with-http_secure_link_module \
+              --with-http_degradation_module \
+              --with-http_slice_module \
+              --with-threads \
+              --with-stream \
+              --with-stream_ssl_module \
+              --with-stream_realip_module \
+              --with-openssl=/workspace/quictls \
+              --add-module=/workspace/set-misc-nginx-module \
+              --add-module=/workspace/ngx_http_substitutions_filter_module \
+              --add-module=/workspace/nginx-http-auth-digest \
+              --add-module=/workspace/nginx_upstream_check_module \
+              --add-module=/workspace/ngx_cache_purge \
+              --add-module=/workspace/nginx-upsync-module \
+              --add-module=/workspace/echo-nginx-module \
+              --add-module=/workspace/mod_zip \
+              --add-module=/workspace/ngx_upstream_jdomain \
+              --add-module=/workspace/nginx-upstream-dynamic-servers \
+              --add-module=/workspace/headers-more-nginx-module \
+              --add-module=/workspace/nginx-module-vts \
+              --add-module=/workspace/nginx-dav-ext-module \
+              --add-module=/workspace/ngx_brotli \
+              --add-module=/workspace/ngx-fancyindex \
+              --user=nginx \
+              --group=nginx && \
+            make -j$(nproc) && \
+            make install && \
+            cd /tmp && tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
+          docker cp $(docker ps -l -q):/tmp/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz .
+
       - name: Build macOS
         if: matrix.os == 'macos'
         run: |
@@ -473,8 +509,8 @@ jobs:
           tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/
           cp nginx_${VERSION}_${{ matrix.suffix }}.tar.gz $GITHUB_WORKSPACE
 
-      - name: Build Windows amd64
-        if: matrix.os == 'windows' && matrix.arch == 'amd64'
+      - name: Build Windows
+        if: matrix.os == 'windows'
         run: |
           $VERSION = "${{ needs.check-version.outputs.new_version }}"
           choco install -y winflexbison3 pcre zlib patch
@@ -531,95 +567,46 @@ jobs:
           Compress-Archive -Path nginx -DestinationPath nginx_${VERSION}_${{ matrix.suffix }}.zip
           cp C:\nginx_${VERSION}_${{ matrix.suffix }}.zip $env:GITHUB_WORKSPACE
 
-      - name: Build Windows arm64
-        if: matrix.os == 'windows' && matrix.arch == 'arm64'
-        run: |
-          $VERSION = "${{ needs.check-version.outputs.new_version }}"
-          choco install -y winflexbison3 pcre zlib patch
-          
-          git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
-          git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
-          git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
-          git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
-          git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
-          git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
-          git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
-          git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
-          git clone --depth=1 --recursive https://github.com/wdaike/ngx_upstream_jdomain.git
-          git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
-          git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
-          git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
-          git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
-          git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
-          
-          cd nginx
-          Get-Content ..\nginx_upstream_check_module\check_1.12.1+.patch | patch -p1
-          .\auto\configure `
-            --prefix=C:\nginx `
-            --with-compat `
-            --with-pcre-jit `
-            --with-http_ssl_module `
-            --with-http_v3_module `
-            --with-http_stub_status_module `
-            --with-http_realip_module `
-            --with-openssl=..\quictls `
-            --add-module=..\set-misc-nginx-module `
-            --add-module=..\ngx_http_substitutions_filter_module `
-            --add-module=..\nginx-http-auth-digest `
-            --add-module=..\nginx_upstream_check_module `
-            --add-module=..\ngx_cache_purge `
-            --add-module=..\nginx-upsync-module `
-            --add-module=..\echo-nginx-module `
-            --add-module=..\mod_zip `
-            --add-module=..\ngx_upstream_jdomain `
-            --add-module=..\nginx-upstream-dynamic-servers `
-            --add-module=..\headers-more-nginx-module `
-            --add-module=..\nginx-module-vts `
-            --add-module=..\nginx-dav-ext-module `
-            --add-module=..\ngx_brotli `
-            --add-module=..\ngx-fancyindex `
-            --user=nginx `
-            --group=nginx `
-            --crossbuild=win32-arm64
-          nmake
-          nmake install
-          cd C:\
-          Compress-Archive -Path nginx -DestinationPath nginx_${VERSION}_${{ matrix.suffix }}.zip
-          cp C:\nginx_${VERSION}_${{ matrix.suffix }}.zip $env:GITHUB_WORKSPACE
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: nginx_${{ needs.check-version.outputs.new_version }}_${{ matrix.suffix }}
-          path: nginx_${{ needs.check-version.outputs.new_version }}_*.tar.gz
+          path: nginx_${{ needs.check-version.outputs.new_version }}_${{ matrix.suffix }}.*
 
   release:
     name: Create Release
-    needs: build
+    needs: [check-version, build]
+    if: needs.check-version.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: Create tag
-        run: |
-          VERSION=${{ needs.check-version.outputs.new_version }}
-          git tag "v$VERSION"
-          git push origin "v$VERSION"
+          pattern: nginx_${{ needs.check-version.outputs.new_version }}_*
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ needs.check-version.outputs.new_version }}
-          files: |
-            artifacts/**/*.tar.gz
-            artifacts/**/*.zip
-          generate_release_notes: true
+          name: Nginx ${{ needs.check-version.outputs.new_version }}
+          body: |
+            Auto-built nginx ${{ needs.check-version.outputs.new_version }} binaries for multiple platforms.
+            
+            ## Included Modules
+            - HTTP/3 (QUIC) support via QuicTLS
+            - Brotli compression
+            - Headers more
+            - VTS (Virtual host traffic status)
+            - And more...
+            
+            ## Platforms
+            - Ubuntu (amd64, arm64)
+            - Debian (amd64, arm64)
+            - Red Hat / CentOS / Rocky Linux / AlmaLinux (amd64, arm64)
+            - Alpine (amd64, arm64)
+            - macOS (amd64, arm64)
+            - Windows (amd64)
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
