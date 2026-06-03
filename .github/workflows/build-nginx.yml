@@ -517,10 +517,10 @@ jobs:
             cmake --build . --config Release --target brotlienc && \
             make install && \
             cd ../../../.. && \
-          git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
+          git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
           
-          cd nginx
-          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
+          cd nginx && \
+          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
