@@ -34,18 +34,8 @@ jobs:
           if [ -n "${{ github.event.inputs.version }}" ]; then
             LATEST_TAG="release-${{ github.event.inputs.version }}"
           else
-            # 使用 GitHub CLI 获取最新版本（更可靠）
-            if command -v gh &> /dev/null; then
-              LATEST_TAG=$(gh release list --repo nginx/nginx --limit 1 --json tagName --jq '.[0].tagName')
-            else
-              # 回退到 curl + jq 方式
-              RESPONSE=$(curl -s https://api.github.com/repos/nginx/nginx/tags)
-              if echo "$RESPONSE" | jq 'type' | grep -q array; then
-                LATEST_TAG=$(echo "$RESPONSE" | jq -r '.[0].name')
-              else
-                LATEST_TAG=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
-              fi
-            fi
+            # 使用 releases/latest API 获取最新稳定版本
+            LATEST_TAG=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
           fi
           
           if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
@@ -530,7 +520,7 @@ jobs:
             --with-http_stub_status_module \
             --with-http_realip_module \
             --with-openssl=../quictls \
-            --with-cc-opt="-Wno-pragma-pack -Wno-unused-but-set-variable" \
+            --with-cc-opt="-Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
@@ -620,9 +610,7 @@ jobs:
             --add-module=..\nginx-module-vts `
             --add-module=..\nginx-dav-ext-module `
             --add-module=..\ngx_brotli `
-            --add-module=..\ngx-fancyindex `
-            --user=nginx `
-            --group=nginx
+            --add-module=..\ngx-fancyindex
 
           nmake
           nmake install
