@@ -197,6 +197,7 @@ jobs:
             git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
             git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
+            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
             git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
             cd ngx_brotli/deps/brotli && \
             mkdir -p out && cd out && \
