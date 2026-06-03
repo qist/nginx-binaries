@@ -545,15 +545,27 @@ jobs:
           tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/
           cp nginx_${VERSION}_${{ matrix.suffix }}.tar.gz $GITHUB_WORKSPACE
 
+      - name: Setup MSYS2 UCRT64
+        if: matrix.os == 'windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-make
+            mingw-w64-ucrt-x86_64-pcre2
+            mingw-w64-ucrt-x86_64-zlib
+            mingw-w64-ucrt-x86_64-cmake
+            git
+            patch
+            zip
+
       - name: Build Windows
         if: matrix.os == 'windows'
+        shell: msys2 {0}
         run: |
-          $VERSION = "${{ needs.check-version.outputs.new_version }}"
-          choco install -y winflexbison3 pcre zlib patch libxml2 libxslt cmake
-          
-          # 安装 Visual Studio Build Tools
-          choco install -y visualstudio2022-buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
-          
+          VERSION=${{ needs.check-version.outputs.new_version }}
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
@@ -571,56 +583,44 @@ jobs:
           git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
           git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
           git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
-          cd ngx_brotli\deps\brotli
-          New-Item -ItemType Directory -Force -Path out | Out-Null
-          cd out
+          cd ngx_brotli/deps/brotli
+          mkdir -p out && cd out
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
           cmake --build . --config Release --target brotlienc
-          cd ..\..\..\..
+          cd ../../../..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
 
-          # 初始化 Visual Studio 环境（必须在 configure 之前）
-          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
-          & "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64
-
           cd nginx
-          Get-Content ..\nginx_upstream_check_module\check_1.20.1+.patch | patch -p1
-          .\auto\configure `
-            --prefix=C:\nginx `
-            --with-compat `
-            --with-pcre-jit `
-            --with-http_ssl_module `
-            --with-http_v3_module `
-            --with-http_stub_status_module `
-            --with-http_realip_module `
-            --with-openssl=..\quictls `
-            --add-module=..\ngx_devel_kit `
-            --add-module=..\set-misc-nginx-module `
-            --add-module=..\ngx_http_substitutions_filter_module `
-            --add-module=..\nginx-http-auth-digest `
-            --add-module=..\nginx_upstream_check_module `
-            --add-module=..\ngx_cache_purge `
-            --add-module=..\nginx-upsync-module `
-            --add-module=..\echo-nginx-module `
-            --add-module=..\mod_zip `
-            --add-module=..\ngx_upstream_jdomain `
-            --add-module=..\nginx-upstream-dynamic-servers `
-            --add-module=..\headers-more-nginx-module `
-            --add-module=..\nginx-module-vts `
-            --add-module=..\nginx-dav-ext-module `
-            --add-module=..\ngx_brotli `
-            --add-module=..\ngx-fancyindex
-
-          if ($LASTEXITCODE -ne 0) { Write-Error "configure failed"; exit 1 }
-          if (-not (Test-Path "Makefile")) { Write-Error "Makefile not found after configure"; exit 1 }
-
-          nmake
-          if ($LASTEXITCODE -ne 0) { Write-Error "nmake failed"; exit 1 }
-          nmake install
-          if ($LASTEXITCODE -ne 0) { Write-Error "nmake install failed"; exit 1 }
-          cd C:\
-          Compress-Archive -Path nginx -DestinationPath nginx_${VERSION}_${{ matrix.suffix }}.zip
-          cp C:\nginx_${VERSION}_${{ matrix.suffix }}.zip $env:GITHUB_WORKSPACE
+          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
+          ./auto/configure \
+            --prefix=/tmp/nginx \
+            --with-compat \
+            --with-pcre-jit \
+            --with-http_ssl_module \
+            --with-http_v3_module \
+            --with-http_stub_status_module \
+            --with-http_realip_module \
+            --with-openssl=../quictls \
+            --add-module=../ngx_devel_kit \
+            --add-module=../set-misc-nginx-module \
+            --add-module=../ngx_http_substitutions_filter_module \
+            --add-module=../nginx-http-auth-digest \
+            --add-module=../nginx_upstream_check_module \
+            --add-module=../ngx_cache_purge \
+            --add-module=../nginx-upsync-module \
+            --add-module=../echo-nginx-module \
+            --add-module=../mod_zip \
+            --add-module=../ngx_upstream_jdomain \
+            --add-module=../nginx-upstream-dynamic-servers \
+            --add-module=../headers-more-nginx-module \
+            --add-module=../nginx-module-vts \
+            --add-module=../nginx-dav-ext-module \
+            --add-module=../ngx_brotli \
+            --add-module=../ngx-fancyindex
+          make -j$(nproc)
+          make install
+          cd /tmp
+          zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip nginx/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
