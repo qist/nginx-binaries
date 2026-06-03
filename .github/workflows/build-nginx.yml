@@ -554,6 +554,7 @@ jobs:
           install: >-
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-make
+            mingw-w64-ucrt-x86_64-pcre
             mingw-w64-ucrt-x86_64-pcre2
             mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-cmake
@@ -592,6 +593,7 @@ jobs:
 
           cd nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
+          export PCRE_CONF=$(pcre-config --prefix)
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
@@ -601,6 +603,8 @@ jobs:
             --with-http_stub_status_module \
             --with-http_realip_module \
             --with-openssl=../quictls \
+            --with-cc-opt="-I${PCRE_CONF}/include" \
+            --with-ld-opt="-L${PCRE_CONF}/lib" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
