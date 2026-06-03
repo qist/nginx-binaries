@@ -180,7 +180,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl automake libtool cmake && 
+            sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl automake libtool cmake linux-headers && 
             git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
@@ -580,12 +580,13 @@ jobs:
           git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
           git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
           git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
-          cd ngx_brotli/deps/brotli
-          mkdir -p out && cd out
+          cd ngx_brotli\deps\brotli
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          cd out
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
           cmake --build . --config Release --target brotlienc
           cmake --install . --config Release
-          cd ../../../..
+          cd ..\..\..\..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
 
           cd nginx
@@ -620,7 +621,7 @@ jobs:
           
           # 初始化 Visual Studio 环境
           $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
-          & "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch x64
+          & "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64
           
           nmake
           nmake install
