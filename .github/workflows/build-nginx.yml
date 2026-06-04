@@ -580,11 +580,7 @@ jobs:
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
           git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
-          git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
-          git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
           git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
-          git clone --depth=1 --recursive https://github.com/wdaike/ngx_upstream_jdomain.git
-          git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
           git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
           git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
           git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
@@ -618,11 +614,7 @@ jobs:
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
             --add-module=../nginx-http-auth-digest \
-            --add-module=../ngx_cache_purge \
-            --add-module=../echo-nginx-module \
             --add-module=../mod_zip \
-            --add-module=../ngx_upstream_jdomain \
-            --add-module=../nginx-upstream-dynamic-servers \
             --add-module=../headers-more-nginx-module \
             --add-module=../nginx-module-vts \
             --add-module=../nginx-dav-ext-module \
