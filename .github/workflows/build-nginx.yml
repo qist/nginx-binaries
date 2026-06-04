@@ -133,17 +133,17 @@ jobs:
           #   use-docker: true
           #   docker-image: alpine:latest
 
-          # macOS amd64 (Intel - 使用原生 intel 运行器)
-          - os: macos
-            arch: amd64
-            runs-on: macos-15-intel
-            suffix: macos_amd64
+          # # macOS amd64 (Intel - 使用原生 intel 运行器)
+          # - os: macos
+          #   arch: amd64
+          #   runs-on: macos-15-intel
+          #   suffix: macos_amd64
 
-          # macOS arm64 (原生 Apple Silicon)
-          - os: macos
-            arch: arm64
-            runs-on: macos-15
-            suffix: macos_arm64
+          # # macOS arm64 (原生 Apple Silicon)
+          # - os: macos
+          #   arch: arm64
+          #   runs-on: macos-15
+          #   suffix: macos_arm64
 
           # Windows amd64
           - os: windows
@@ -605,9 +605,10 @@ jobs:
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
-            --with-pcre \
+            --with-pcre=/ucrt64 \
             --with-pcre-jit \
-            --with-zlib \
+            --with-http_ssl_module \
+            --with-zlib=/ucrt64 \
             --with-http_v3_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
