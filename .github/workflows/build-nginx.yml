@@ -580,7 +580,6 @@ jobs:
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
           git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
-          git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
           git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
           git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
           cd ngx_brotli/deps/brotli
@@ -596,7 +595,7 @@ jobs:
           cd ../nginx
           ./auto/configure \
             --with-cc=gcc \
-            --prefix=/tmp/nginx \
+            --prefix=. \
             --with-compat \
             --with-pcre=../pcre2 \
             --with-pcre-jit \
@@ -613,17 +612,15 @@ jobs:
             --add-module=../ngx_http_substitutions_filter_module \
             --add-module=../nginx-http-auth-digest \
             --add-module=../headers-more-nginx-module \
-            --add-module=../mod_zip \
             --add-module=../ngx_brotli \
             --add-module=../ngx-fancyindex 
           mingw32-make -j$(nproc)
           mingw32-make install
-          cd /tmp
           # 修复 Windows 可执行文件扩展名
-          if [ -f nginx/sbin/nginx ]; then
-            mv nginx/sbin/nginx nginx/sbin/nginx.exe
+          if [ -f sbin/nginx ]; then
+            mv sbin/nginx sbin/nginx.exe
           fi
-          zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip nginx/
+          zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
