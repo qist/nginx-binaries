@@ -596,17 +596,13 @@ jobs:
           cmake --build . --config Release --target brotlienc
           cd ../../../..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
-          git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
-          git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
           cd nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --with-cc=gcc \
             --prefix=/tmp/nginx \
             --with-compat \
-            --with-pcre=../pcre2 \
             --with-pcre-jit \
-            --with-zlib=../zlib \
             --with-http_ssl_module \
             --with-http_v3_module \
             --with-http_stub_status_module \
