@@ -157,7 +157,7 @@ jobs:
             runs-on: ubuntu-latest
             suffix: freebsd_amd64
             use-docker: true
-            docker-image: freebsd/freebsd:latest
+            docker-image: freebsd/freebsd-toolchain:15.0
 
           # FreeBSD arm64
           - os: freebsd
@@ -165,7 +165,7 @@ jobs:
             runs-on: ubuntu-latest
             suffix: freebsd_arm64
             use-docker: true
-            docker-image: freebsd/freebsd:latest
+            docker-image: freebsd/freebsd-toolchain:15.0
 
     steps:
       - name: Checkout code
@@ -688,13 +688,17 @@ jobs:
           cmake --build . --config Release --target brotlienc
           cd ../../../..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
+          git clone --depth=1 --recursive https://github.com/PCRE2Project/pcre2.git
+          git clone --depth=1 --recursive https://github.com/madler/zlib.git
 
           cd nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
+            --with-pcre=../pcre2 \
             --with-pcre-jit \
+            --with-zlib=../zlib \
             --with-http_ssl_module \
             --with-http_v3_module \
             --with-http_stub_status_module \
