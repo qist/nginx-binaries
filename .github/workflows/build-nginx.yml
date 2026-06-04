@@ -151,6 +151,22 @@ jobs:
             runs-on: windows-latest
             suffix: windows_amd64
 
+          # FreeBSD amd64
+          - os: freebsd
+            arch: amd64
+            runs-on: ubuntu-latest
+            suffix: freebsd_amd64
+            use-docker: true
+            docker-image: freebsd/freebsd:latest
+
+          # FreeBSD arm64
+          - os: freebsd
+            arch: arm64
+            runs-on: ubuntu-latest
+            suffix: freebsd_arm64
+            use-docker: true
+            docker-image: freebsd/freebsd:latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -546,6 +562,83 @@ jobs:
           tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/
           cp nginx_${VERSION}_${{ matrix.suffix }}.tar.gz $GITHUB_WORKSPACE
 
+      - name: Build FreeBSD
+        if: matrix.use-docker && matrix.os == 'freebsd'
+        run: |
+          VERSION=${{ needs.check-version.outputs.new_version }}
+          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
+            bash -c "pkg update && pkg install -y git gcc gmake pcre zlib cmake && \
+            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
+            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
+            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
+            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
+            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git && \
+            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git && \
+            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git && \
+            git clone --depth=1 --recursive https://github.com/wandenberg/nginx-upstream-check-module.git && \
+            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git && \
+            git clone --depth=1 --recursive https://github.com/nicholaswmin/ngx-mod-zip.git && \
+            git clone --depth=1 --recursive https://github.com/xuONG/ngx_upstream_jdomain.git && \
+            git clone --depth=1 --recursive https://github.com/zhongtang/ngx_upstream_dyups.git && \
+            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
+            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
+            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
+            git clone --depth=1 --recursive https://github.com/madhandler/nginx-module-sticky.git && \
+            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
+            cd ngx_brotli/deps/brotli && \
+            mkdir -p out && cd out && \
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF .. && \
+            cmake --build . --config Release --target brotlienc && \
+            cmake --build . --config Release --target brotlidec && \
+            cmake --build . --config Release --target brotlicommon && \
+            cmake --install . --prefix=./installed && \
+            cd ../../../.. && \
+            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
+            cd nginx && \
+            patch -p1 < nginx_upstream_check_module/check_1.20.1+.patch && \
+            ./auto/configure \
+              --prefix=/tmp/nginx \
+              --with-compat \
+              --with-pcre \
+              --with-pcre-jit \
+              --with-zlib \
+              --with-http_v3_module \
+              --with-http_stub_status_module \
+              --with-http_realip_module \
+              --with-http_addition_module \
+              --with-http_random_index_module \
+              --with-http_secure_link_module \
+              --with-http_gzip_static_module \
+              --with-http_auth_request_module \
+              --with-http_slice_module \
+              --with-http_mp4_module \
+              --with-http_gunzip_filter_module \
+              --with-http_flv_module \
+              --with-http_image_filter_module=dynamic \
+              --with-http_xslt_module=dynamic \
+              --with-openssl=../quictls \
+              --with-cc-opt='-I../quictls/.openssl/include -Wno-incompatible-pointer-types' \
+              --with-ld-opt='-L../quictls/.openssl/lib' \
+              --add-module=../ngx_devel_kit \
+              --add-module=../set-misc-nginx-module \
+              --add-module=../ngx_http_substitutions_filter_module \
+              --add-module=../nginx_upstream_check_module \
+              --add-module=../ngx_cache_purge \
+              --add-module=../nginx-upstream-check-module \
+              --add-module=../echo-nginx-module \
+              --add-module=../ngx-mod-zip \
+              --add-module=../ngx_upstream_jdomain \
+              --add-module=../headers-more-nginx-module \
+              --add-module=../nginx-module-vts \
+              --add-module=../nginx-dav-ext-module \
+              --add-module=../ngx_brotli \
+              --add-module=../ngx-fancyindex \
+              --user=nginx \
+              --group=nginx && \
+            gmake -j$(nproc) && \
+            gmake install && \
+            cd /tmp && tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
+
       - name: Setup MSYS2 UCRT64
         if: matrix.os == 'windows'
         uses: msys2/setup-msys2@v2
@@ -555,7 +648,7 @@ jobs:
           install: >-
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-make
-            mingw-w64-ucrt-x86_64-pcre
+            mingw-w64-ucrt-x86_64-pcre2
             mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-libxml2
@@ -563,6 +656,8 @@ jobs:
             git
             patch
             zip
+            perl
+            nasm
 
       - name: Build Windows
         if: matrix.os == 'windows'
@@ -596,19 +691,11 @@ jobs:
 
           cd nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
-          export PATH=/ucrt64/bin:$PATH
-          export PKG_CONFIG_PATH=/ucrt64/lib/pkgconfig:/ucrt64/share/pkgconfig
-          export CFLAGS="-I/ucrt64/include"
-          export LDFLAGS="-L/ucrt64/lib"
-          export PKG_CONFIG_PATH="/ucrt64/lib/pkgconfig:$PKG_CONFIG_PATH"
-
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
-            --with-pcre=/ucrt64 \
             --with-pcre-jit \
             --with-http_ssl_module \
-            --with-zlib=/ucrt64 \
             --with-http_v3_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
