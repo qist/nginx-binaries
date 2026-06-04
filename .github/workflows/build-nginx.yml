@@ -496,8 +496,8 @@ jobs:
           fi
           PCRE_PREFIX=$(brew --prefix pcre)
           ZLIB_PREFIX=$(brew --prefix zlib)
-          $ARCH_PREFIX git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
-          $ARCH_PREFIX git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
+          git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
+          git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
@@ -606,6 +606,16 @@ jobs:
 
           cd nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
+          export PATH=/ucrt64/bin:$PATH
+          export PKG_CONFIG_PATH=/ucrt64/lib/pkgconfig:/ucrt64/share/pkgconfig
+          export CFLAGS="-I/ucrt64/include"
+          export LDFLAGS="-L/ucrt64/lib"
+
+          export LIBXML2_LIBS="-L/ucrt64/lib -lxml2"
+          export LIBXML2_CFLAGS="-I/ucrt64/include/libxml2"
+
+          export LIBXSLT_LIBS="-L/ucrt64/lib -lxslt -lxml2"
+          export LIBXSLT_CFLAGS="-I/ucrt64/include/libxslt"
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
@@ -616,6 +626,7 @@ jobs:
             --with-http_v3_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
+            --with-http_addition_module \
             --with-openssl=../quictls \
             --with-cc-opt="-I/ucrt64/include" \
             --with-ld-opt="-L/ucrt64/lib" \
