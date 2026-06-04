@@ -580,7 +580,6 @@ jobs:
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
           git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
-          git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
           git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
           git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
           git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
@@ -601,7 +600,6 @@ jobs:
           cd pcre2
           ./autogen.sh
           cd ../nginx
-          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --with-cc=gcc \
             --prefix=/tmp/nginx \
@@ -620,7 +618,6 @@ jobs:
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
             --add-module=../nginx-http-auth-digest \
-            --add-module=../nginx_upstream_check_module \
             --add-module=../ngx_cache_purge \
             --add-module=../echo-nginx-module \
             --add-module=../mod_zip \
