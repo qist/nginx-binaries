@@ -592,12 +592,14 @@ jobs:
           cmake --build . --config Release --target brotlienc
           cd ../../../..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
+           ls /ucrt64/
           cd nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --with-cc=gcc \
             --prefix=/tmp/nginx \
             --with-compat \
+            --with-pcre=/ucrt64 \
             --with-pcre-jit \
             --with-http_ssl_module \
             --with-http_v3_module \
