@@ -567,6 +567,7 @@ jobs:
             zip
             perl
             nasm
+            make
 
       - name: Build Windows
         if: matrix.os == 'windows'
