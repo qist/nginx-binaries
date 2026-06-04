@@ -482,27 +482,10 @@ jobs:
         if: matrix.os == 'macos'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          
-          # 使用原生运行器架构，不需要交叉编译
           brew install pcre zlib libxml2 libxslt cmake
-
-          # 设置编译器标志（使用原生架构）
-          export CC="clang"
-          export CXX="clang++"
 
           git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
-
-          # 编译 quictls（根据当前架构选择目标）
-          cd quictls
-          if [ "${{ matrix.arch }}" = "amd64" ]; then
-            ./config --prefix=$(pwd)/.openssl darwin64-x86_64-cc no-shared
-          else
-            ./config --prefix=$(pwd)/.openssl darwin64-arm64-cc no-shared
-          fi
-          make -j$(sysctl -n hw.ncpu)
-          make install_sw LIBDIR=lib
-          cd ..
 
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -599,14 +582,7 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
-          
-          # 编译 quictls
-          cd quictls
-          ./config --prefix=$(pwd)/.openssl mingw64 no-shared
-          mingw32-make -j$(nproc)
-          mingw32-make install_sw LIBDIR=lib
-          cd ..
-          
+
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
