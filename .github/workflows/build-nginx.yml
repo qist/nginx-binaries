@@ -599,7 +599,9 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
-          cd nginx
+          cd pcre2
+          ./autogen.sh
+          cd ../nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --with-cc=gcc \
