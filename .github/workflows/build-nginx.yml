@@ -71,79 +71,79 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Ubuntu amd64
-          - os: ubuntu
-            arch: amd64
-            runs-on: ubuntu-latest
-            suffix: ubuntu_amd64
-            use-docker: false
-            
-          # Ubuntu arm64 (使用 QEMU)
-          - os: ubuntu
-            arch: arm64
-            runs-on: ubuntu-latest
-            suffix: ubuntu_arm64
-            use-docker: true
-            docker-image: ubuntu:22.04
+          # # Ubuntu amd64
+          # - os: ubuntu
+          #   arch: amd64
+          #   runs-on: ubuntu-latest
+          #   suffix: ubuntu_amd64
+          #   use-docker: false
 
-          # Debian amd64
-          - os: debian
-            arch: amd64
-            runs-on: ubuntu-latest
-            use-docker: false
-            suffix: debian_amd64
-            
-          # Debian arm64 (使用 QEMU)
-          - os: debian
-            arch: arm64
-            runs-on: ubuntu-latest
-            suffix: debian_arm64
-            use-docker: true
-            docker-image: debian:12
+          # # Ubuntu arm64 (使用 QEMU)
+          # - os: ubuntu
+          #   arch: arm64
+          #   runs-on: ubuntu-latest
+          #   suffix: ubuntu_arm64
+          #   use-docker: true
+          #   docker-image: ubuntu:22.04
 
-          # Red Hat amd64
-          - os: redhat
-            arch: amd64
-            runs-on: ubuntu-latest
-            suffix: redhat_amd64
-            use-docker: true
-            docker-image: rockylinux:8
-            
-          # Red Hat arm64 (使用 QEMU)
-          - os: redhat
-            arch: arm64
-            runs-on: ubuntu-latest
-            suffix: redhat_arm64
-            use-docker: true
-            docker-image: rockylinux:8
+          # # Debian amd64
+          # - os: debian
+          #   arch: amd64
+          #   runs-on: ubuntu-latest
+          #   use-docker: false
+          #   suffix: debian_amd64
 
-          # Alpine amd64
-          - os: alpine
-            arch: amd64
-            runs-on: ubuntu-latest
-            suffix: alpine_amd64
-            use-docker: true
-            docker-image: alpine:latest
-            
-          # Alpine arm64 (使用 QEMU)
-          - os: alpine
-            arch: arm64
-            runs-on: ubuntu-latest
-            suffix: alpine_arm64
-            use-docker: true
-            docker-image: alpine:latest
+          # # Debian arm64 (使用 QEMU)
+          # - os: debian
+          #   arch: arm64
+          #   runs-on: ubuntu-latest
+          #   suffix: debian_arm64
+          #   use-docker: true
+          #   docker-image: debian:12
+
+          # # Red Hat amd64
+          # - os: redhat
+          #   arch: amd64
+          #   runs-on: ubuntu-latest
+          #   suffix: redhat_amd64
+          #   use-docker: true
+          #   docker-image: rockylinux:8
+
+          # # Red Hat arm64 (使用 QEMU)
+          # - os: redhat
+          #   arch: arm64
+          #   runs-on: ubuntu-latest
+          #   suffix: redhat_arm64
+          #   use-docker: true
+          #   docker-image: rockylinux:8
+
+          # # Alpine amd64
+          # - os: alpine
+          #   arch: amd64
+          #   runs-on: ubuntu-latest
+          #   suffix: alpine_amd64
+          #   use-docker: true
+          #   docker-image: alpine:latest
+
+          # # Alpine arm64 (使用 QEMU)
+          # - os: alpine
+          #   arch: arm64
+          #   runs-on: ubuntu-latest
+          #   suffix: alpine_arm64
+          #   use-docker: true
+          #   docker-image: alpine:latest
 
           # macOS amd64
           - os: macos
             arch: amd64
             runs-on: macos-14
             suffix: macos_amd64
-            
-          # macOS arm64 (原生 Apple Silicon)
-          - os: macos
-            arch: arm64
-            runs-on: macos-14
-            suffix: macos_arm64
+
+          # # macOS arm64 (原生 Apple Silicon)
+          # - os: macos
+          #   arch: arm64
+          #   runs-on: macos-14
+          #   suffix: macos_arm64
 
           # Windows amd64
           - os: windows
