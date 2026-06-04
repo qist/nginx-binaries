@@ -133,17 +133,17 @@ jobs:
           #   use-docker: true
           #   docker-image: alpine:latest
 
-          # macOS amd64
+          # macOS amd64 (Intel - 使用原生 intel 运行器)
           - os: macos
             arch: amd64
-            runs-on: macos-14
+            runs-on: macos-15-intel
             suffix: macos_amd64
 
-          # # macOS arm64 (原生 Apple Silicon)
-          # - os: macos
-          #   arch: arm64
-          #   runs-on: macos-14
-          #   suffix: macos_arm64
+          # macOS arm64 (原生 Apple Silicon)
+          - os: macos
+            arch: arm64
+            runs-on: macos-15
+            suffix: macos_arm64
 
           # Windows amd64
           - os: windows
@@ -483,24 +483,12 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           
-          # 切换到指定架构并安装依赖
-          if [ "${{ matrix.arch }}" = "amd64" ]; then
-            export ARCH="x86_64"
-            export TARGET="darwin64-x86_64-cc"
-            export CMAKE_ARCH="x86_64"
-            arch -x86_64 brew install pcre zlib libxml2 libxslt cmake
-          else
-            export ARCH="arm64"
-            export TARGET="darwin64-arm64-cc"
-            export CMAKE_ARCH="arm64"
-            brew install pcre zlib libxml2 libxslt cmake
-          fi
+          # 使用原生运行器架构，不需要交叉编译
+          brew install pcre zlib libxml2 libxslt cmake
 
-          # 设置编译器标志
-          export CC="clang -arch ${ARCH}"
-          export CXX="clang++ -arch ${ARCH}"
-          export CFLAGS="-arch ${ARCH}"
-          export LDFLAGS="-arch ${ARCH}"
+          # 设置编译器标志（使用原生架构）
+          export CC="clang"
+          export CXX="clang++"
 
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -536,12 +524,22 @@ jobs:
 
           cd nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
+          
+          # 设置 brew 路径
+          if [ "${{ matrix.arch }}" = "amd64" ] && [ -n "$BREW" ]; then
+            PCRE_PREFIX=$($BREW --prefix pcre)
+            ZLIB_PREFIX=$($BREW --prefix zlib)
+          else
+            PCRE_PREFIX=$(brew --prefix pcre)
+            ZLIB_PREFIX=$(brew --prefix zlib)
+          fi
+          
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
-            --with-pcre=$(brew --prefix pcre) \
+            --with-pcre=${PCRE_PREFIX} \
             --with-pcre-jit \
-            --with-zlib=$(brew --prefix zlib) \
+            --with-zlib=${ZLIB_PREFIX} \
             --with-http_ssl_module \
             --with-http_v3_module \
             --with-http_stub_status_module \
@@ -657,8 +655,8 @@ jobs:
             --add-module=../nginx-dav-ext-module \
             --add-module=../ngx_brotli \
             --add-module=../ngx-fancyindex
-          make -j$(nproc)
-          make install
+          mingw32-make -j$(nproc)
+          mingw32-make install
           cd /tmp
           zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip nginx/
 
