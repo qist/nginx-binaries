@@ -573,7 +573,7 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           # 创建 mingw32-make 的别名 make
           ln -sf /ucrt64/bin/mingw32-make.exe /ucrt64/bin/make.exe
-          git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
+          git clone --depth=1 --recursive -b openssl-3.6.2 https://github.com/openssl/openssl.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
 
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
@@ -611,11 +611,10 @@ jobs:
             --with-pcre-jit \
             --with-zlib=../zlib \
             --with-http_ssl_module \
-            --with-http_v3_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
             --with-http_addition_module \
-            --with-openssl=../quictls \
+            --with-openssl=../openssl \
             --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=1024" \
             --with-ld-opt="-L/ucrt64/lib" \
             --add-module=../ngx_devel_kit \
