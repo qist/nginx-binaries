@@ -493,9 +493,13 @@ jobs:
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
 
-          # 编译 quictls
+          # 编译 quictls（根据当前架构选择目标）
           cd quictls
-          ./Configure ${TARGET} no-shared
+          if [ "${{ matrix.arch }}" = "amd64" ]; then
+            ./Configure darwin64-x86_64-cc no-shared
+          else
+            ./Configure darwin64-arm64-cc no-shared
+          fi
           make -j$(sysctl -n hw.ncpu)
           make install_sw DESTDIR=$(pwd)/.openssl
           cd ..
