@@ -557,9 +557,9 @@ jobs:
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-libxml2
             mingw-w64-ucrt-x86_64-libxslt
-            mingw-w64-ucrt-x86_64-autoconf
-            mingw-w64-ucrt-x86_64-automake
             mingw-w64-ucrt-x86_64-libtool
+            autoconf
+            automake
             git
             patch
             zip
