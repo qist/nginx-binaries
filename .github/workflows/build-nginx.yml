@@ -595,6 +595,13 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
+          
+          # 编译 quictls
+          cd quictls
+          ./Configure mingw64 no-shared
+          mingw32-make -j$(nproc)
+          cd ..
+          
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
