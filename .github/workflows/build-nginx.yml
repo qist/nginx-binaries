@@ -567,7 +567,6 @@ jobs:
             zip
             perl
             nasm
-            make
 
       - name: Build Windows
         if: matrix.os == 'windows'
@@ -603,15 +602,15 @@ jobs:
           cd pcre2
           mkdir build
           cd build
-          cmake ..
-          make install
+          cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release  ..
+          mingw32-make -j$(nproc)
+          mingw32-make install
           cd ../../nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
             --with-pcre-jit \
-            --without-pcre \
             --with-zlib=../zlib \
             --with-http_ssl_module \
             --with-http_v3_module \
