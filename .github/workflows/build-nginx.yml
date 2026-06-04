@@ -136,7 +136,7 @@ jobs:
           # macOS amd64
           - os: macos
             arch: amd64
-            runs-on: macos-13
+            runs-on: macos-14
             suffix: macos_amd64
             
           # macOS arm64 (原生 Apple Silicon)
@@ -555,7 +555,6 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-make
             mingw-w64-ucrt-x86_64-pcre
-            mingw-w64-ucrt-x86_64-pcre2
             mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-cmake
             git
@@ -596,6 +595,7 @@ jobs:
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
+            --with-pcre=/ucrt64 \
             --with-pcre-jit \
             --with-http_ssl_module \
             --with-http_v3_module \
