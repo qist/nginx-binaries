@@ -482,17 +482,18 @@ jobs:
         if: matrix.os == 'macos'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          brew install pcre zlib libxml2 libxslt cmake
-
-          # 设置交叉编译架构
+          
+          # 切换到指定架构并安装依赖
           if [ "${{ matrix.arch }}" = "amd64" ]; then
             export ARCH="x86_64"
             export TARGET="darwin64-x86_64-cc"
             export CMAKE_ARCH="x86_64"
+            arch -x86_64 brew install pcre zlib libxml2 libxslt cmake
           else
             export ARCH="arm64"
             export TARGET="darwin64-arm64-cc"
             export CMAKE_ARCH="arm64"
+            brew install pcre zlib libxml2 libxslt cmake
           fi
 
           # 设置编译器标志
@@ -538,7 +539,9 @@ jobs:
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
+            --with-pcre=$(brew --prefix pcre) \
             --with-pcre-jit \
+            --with-zlib=$(brew --prefix zlib) \
             --with-http_ssl_module \
             --with-http_v3_module \
             --with-http_stub_status_module \
@@ -630,14 +633,11 @@ jobs:
             --with-compat \
             --with-pcre=/ucrt64 \
             --with-pcre-jit \
-            --with-http_ssl_module \
             --with-zlib=/ucrt64 \
             --with-http_v3_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
             --with-http_addition_module \
-            --with-http_xslt_module=dynamic \
-            --with-libxml2=/ucrt64 \
             --with-openssl=../quictls \
             --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt" \
             --with-ld-opt="-L/ucrt64/lib" \
