@@ -496,12 +496,12 @@ jobs:
           # 编译 quictls（根据当前架构选择目标）
           cd quictls
           if [ "${{ matrix.arch }}" = "amd64" ]; then
-            ./Configure darwin64-x86_64-cc no-shared
+            ./config --prefix=$(pwd)/.openssl darwin64-x86_64-cc no-shared
           else
-            ./Configure darwin64-arm64-cc no-shared
+            ./config --prefix=$(pwd)/.openssl darwin64-arm64-cc no-shared
           fi
           make -j$(sysctl -n hw.ncpu)
-          make install_sw DESTDIR=$(pwd)/.openssl
+          make install_sw LIBDIR=lib
           cd ..
 
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
@@ -602,8 +602,9 @@ jobs:
           
           # 编译 quictls
           cd quictls
-          ./Configure mingw64 no-shared
+          ./config --prefix=$(pwd)/.openssl mingw64 no-shared
           mingw32-make -j$(nproc)
+          mingw32-make install_sw LIBDIR=lib
           cd ..
           
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
@@ -639,9 +640,9 @@ jobs:
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
-            --with-pcre=/ucrt64 \
+            --with-pcre \
             --with-pcre-jit \
-            --with-zlib=/ucrt64 \
+            --with-zlib \
             --with-http_v3_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
