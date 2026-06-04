@@ -498,6 +498,15 @@ jobs:
           ZLIB_PREFIX=$(brew --prefix zlib)
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
+
+          # 如果是 amd64，先编译 quictls 为 x86_64
+          if [ -n "$ARCH_PREFIX" ]; then
+            cd quictls
+            $ARCH_PREFIX ./Configure darwin64-x86_64-cc no-shared
+            $ARCH_PREFIX make -j$(sysctl -n hw.ncpu)
+            cd ..
+          fi
+
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
