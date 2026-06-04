@@ -571,6 +571,8 @@ jobs:
         shell: msys2 {0}
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
+          # 创建 mingw32-make 的别名 make
+          ln -sf /ucrt64/bin/mingw32-make.exe /ucrt64/bin/make.exe
           git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
 
@@ -597,9 +599,7 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
-          cd pcre2
-          ./autogen.sh
-          cd ../nginx
+          cd nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --with-cc=gcc \
