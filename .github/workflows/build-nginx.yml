@@ -619,6 +619,10 @@ jobs:
           mingw32-make -j$(nproc)
           mingw32-make install
           cd /tmp
+          # 修复 Windows 可执行文件扩展名
+          if [ -f nginx/sbin/nginx ]; then
+            mv nginx/sbin/nginx nginx/sbin/nginx.exe
+          fi
           zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip nginx/
 
       - name: Upload artifact
