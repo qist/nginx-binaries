@@ -604,7 +604,6 @@ jobs:
           mkdir build
           cd build
           cmake ..
-          make -j$(nproc)
           make install
           cd ../../nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
@@ -622,7 +621,7 @@ jobs:
             --with-openssl=../quictls \
             --with-cc=gcc \
             --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=1024" \
-            --with-ld-opt="-L/ucrt64/lib -lpcre2-8" \
+            --with-ld-opt="-L/ucrt64/lib" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
