@@ -171,7 +171,7 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
             sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl automake libtool cmake linux-headers && 
-            git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
+            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
@@ -248,7 +248,7 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
             bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch libxml2-devel libxslt-devel perl perl-IPC-Cmd cmake && \
-            git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
+            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
@@ -326,7 +326,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev cmake
           
-          git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
+          git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -407,7 +407,7 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
             bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev cmake && \
-            git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
+            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
@@ -490,7 +490,7 @@ jobs:
           export CC="clang"
           export CXX="clang++"
 
-          git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
+          git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
 
           # 编译 quictls（根据当前架构选择目标）
@@ -597,7 +597,7 @@ jobs:
         shell: msys2 {0}
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
+          git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           
           # 编译 quictls
