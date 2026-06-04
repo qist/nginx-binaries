@@ -581,7 +581,6 @@ jobs:
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
           git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
           git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
           git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
           cd ngx_brotli/deps/brotli
           mkdir -p out && cd out
@@ -613,7 +612,6 @@ jobs:
             --add-module=../ngx_http_substitutions_filter_module \
             --add-module=../nginx-http-auth-digest \
             --add-module=../headers-more-nginx-module \
-            --add-module=../nginx-dav-ext-module \
             --add-module=../ngx-fancyindex 
           mingw32-make -j$(nproc)
           mingw32-make install
