@@ -560,8 +560,6 @@ jobs:
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-libxml2
             mingw-w64-ucrt-x86_64-libxslt
-            pcre-devel
-            zlib-devel
             git
             patch
             zip
@@ -610,6 +608,7 @@ jobs:
           ./auto/configure \
             --prefix=/tmp/nginx \
             --with-compat \
+            --with-pcre=../pcre2 \
             --with-pcre-jit \
             --with-zlib=../zlib \
             --with-http_ssl_module \
