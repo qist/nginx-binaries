@@ -136,7 +136,7 @@ jobs:
           # macOS amd64
           - os: macos
             arch: amd64
-            runs-on: macos-14
+            runs-on: macos-13
             suffix: macos_amd64
             
           # macOS arm64 (原生 Apple Silicon)
@@ -483,7 +483,8 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           brew install pcre zlib libxml2 libxslt cmake
-          
+          PCRE_PREFIX=$(brew --prefix pcre)
+          ZLIB_PREFIX=$(brew --prefix zlib)
           git clone --depth=1 -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
@@ -598,6 +599,7 @@ jobs:
             --with-pcre=/ucrt64 \
             --with-pcre-jit \
             --with-http_ssl_module \
+            --with-zlib=/ucrt64 \
             --with-http_v3_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
