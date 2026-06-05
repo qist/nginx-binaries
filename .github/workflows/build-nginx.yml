@@ -452,7 +452,6 @@ jobs:
             --with-mail_ssl_module \
             --with-file-aio \
             --with-http_v3_module \
-            --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../quictls \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
@@ -669,7 +668,6 @@ jobs:
             --with-mail \
             --with-mail_ssl_module \
             --with-http_v3_module \
-            --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../quictls \
             --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types" \
             --add-module=../ngx_devel_kit \
