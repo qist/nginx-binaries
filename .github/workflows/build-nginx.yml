@@ -197,7 +197,17 @@ jobs:
             cd ../../../../nginx && \
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
             ./auto/configure \
-              --prefix=/tmp/nginx \
+              --prefix= \
+              --conf-path=conf/nginx.conf \
+              --pid-path=logs/nginx.pid \
+              --http-log-path=logs/access.log \
+              --error-log-path=logs/error.log \
+              --sbin-path=nginx \
+              --http-client-body-temp-path=temp/client_body_temp \
+              --http-proxy-temp-path=temp/proxy_temp \
+              --http-fastcgi-temp-path=temp/fastcgi_temp \
+              --http-scgi-temp-path=temp/scgi_temp \
+              --http-uwsgi-temp-path=temp/uwsgi_temp \
               --with-compat \
               --with-pcre-jit \
               --with-http_ssl_module \
@@ -239,8 +249,19 @@ jobs:
               --user=nginx \
               --group=nginx && \
             make -j$(nproc) && \
-            make install && \
-            cd /tmp && tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
+            mkdir -p /tmp/nginx && \
+            \cp objs/nginx /tmp/nginx/nginx && \
+            \cp -pdr conf /tmp/nginx/  && \
+            \cp -pdr docs/html /tmp/nginx/  && \
+            mkdir -p /tmp/nginx/logs && \
+            mkdir -p /tmp/nginx/temp/client_body_temp && \
+            mkdir -p /tmp/nginx/temp/proxy_temp && \
+            mkdir -p /tmp/nginx/temp/fastcgi_temp && \
+            mkdir -p /tmp/nginx/temp/scgi_temp && \
+            mkdir -p /tmp/nginx/temp/uwsgi_temp && \
+            ls /tmp/nginx/ && \
+            cd /tmp && \
+            tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
 
       - name: Build with Docker (Red Hat)
         if: matrix.use-docker && matrix.os == 'redhat'
@@ -274,7 +295,17 @@ jobs:
             cd ../../../../nginx && \
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
             ./auto/configure \
-              --prefix=/tmp/nginx \
+              --prefix= \
+              --conf-path=conf/nginx.conf \
+              --pid-path=logs/nginx.pid \
+              --http-log-path=logs/access.log \
+              --error-log-path=logs/error.log \
+              --sbin-path=nginx \
+              --http-client-body-temp-path=temp/client_body_temp \
+              --http-proxy-temp-path=temp/proxy_temp \
+              --http-fastcgi-temp-path=temp/fastcgi_temp \
+              --http-scgi-temp-path=temp/scgi_temp \
+              --http-uwsgi-temp-path=temp/uwsgi_temp \
               --with-compat \
               --with-pcre-jit \
               --with-http_ssl_module \
@@ -316,8 +347,19 @@ jobs:
               --user=nginx \
               --group=nginx && \
             make -j$(nproc) && \
-            make install && \
-            cd /tmp && tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
+            mkdir -p /tmp/nginx && \
+            \cp objs/nginx /tmp/nginx/nginx && \
+            \cp -pdr conf /tmp/nginx/  && \
+            \cp -pdr docs/html /tmp/nginx/  && \
+            mkdir -p /tmp/nginx/logs && \
+            mkdir -p /tmp/nginx/temp/client_body_temp && \
+            mkdir -p /tmp/nginx/temp/proxy_temp && \
+            mkdir -p /tmp/nginx/temp/fastcgi_temp && \
+            mkdir -p /tmp/nginx/temp/scgi_temp && \
+            mkdir -p /tmp/nginx/temp/uwsgi_temp && \
+            ls /tmp/nginx/ && \
+            cd /tmp && \
+            tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
 
       - name: Build directly (Ubuntu/Debian)
         if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && !matrix.use-docker
@@ -354,7 +396,17 @@ jobs:
           cd nginx
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
-            --prefix=/tmp/nginx \
+            --prefix= \
+            --conf-path=conf/nginx.conf \
+            --pid-path=logs/nginx.pid \
+            --http-log-path=logs/access.log \
+            --error-log-path=logs/error.log \
+            --sbin-path=nginx \
+            --http-client-body-temp-path=temp/client_body_temp \
+            --http-proxy-temp-path=temp/proxy_temp \
+            --http-fastcgi-temp-path=temp/fastcgi_temp \
+            --http-scgi-temp-path=temp/scgi_temp \
+            --http-uwsgi-temp-path=temp/uwsgi_temp \
             --with-compat \
             --with-pcre-jit \
             --with-http_ssl_module \
@@ -396,8 +448,18 @@ jobs:
             --user=nginx \
             --group=nginx
           make -j$(nproc)
-          make install
-          cd /tmp
+            mkdir -p /tmp/nginx
+            \cp objs/nginx /tmp/nginx/nginx
+            \cp -pdr conf /tmp/nginx/ 
+            \cp -pdr docs/html /tmp/nginx/ 
+            mkdir -p /tmp/nginx/logs 
+            mkdir -p /tmp/nginx/temp/client_body_temp
+            mkdir -p /tmp/nginx/temp/proxy_temp 
+            mkdir -p /tmp/nginx/temp/fastcgi_temp 
+            mkdir -p /tmp/nginx/temp/scgi_temp 
+            mkdir -p /tmp/nginx/temp/uwsgi_temp 
+            ls /tmp/nginx/ 
+            cd /tmp 
           tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/
           cp nginx_${VERSION}_${{ matrix.suffix }}.tar.gz $GITHUB_WORKSPACE
 
@@ -433,7 +495,17 @@ jobs:
             cd ../../../../nginx && \
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
             ./auto/configure \
-              --prefix=/tmp/nginx \
+              --prefix= \
+              --conf-path=conf/nginx.conf \
+              --pid-path=logs/nginx.pid \
+              --http-log-path=logs/access.log \
+              --error-log-path=logs/error.log \
+              --sbin-path=nginx \
+              --http-client-body-temp-path=temp/client_body_temp \
+              --http-proxy-temp-path=temp/proxy_temp \
+              --http-fastcgi-temp-path=temp/fastcgi_temp \
+              --http-scgi-temp-path=temp/scgi_temp \
+              --http-uwsgi-temp-path=temp/uwsgi_temp \
               --with-compat \
               --with-pcre-jit \
               --with-http_ssl_module \
@@ -475,8 +547,19 @@ jobs:
               --user=nginx \
               --group=nginx && \
             make -j$(nproc) && \
-            make install && \
-            cd /tmp && tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
+            mkdir -p /tmp/nginx && \
+            \cp objs/nginx /tmp/nginx/nginx && \
+            \cp -pdr conf /tmp/nginx/ && \
+            \cp -pdr docs/html /tmp/nginx/ && \
+            mkdir -p /tmp/nginx/logs && \
+            mkdir -p /tmp/nginx/temp/client_body_temp && \
+            mkdir -p /tmp/nginx/temp/proxy_temp && \
+            mkdir -p /tmp/nginx/temp/fastcgi_temp && \
+            mkdir -p /tmp/nginx/temp/scgi_temp && \
+            mkdir -p /tmp/nginx/temp/uwsgi_temp && \
+            ls /tmp/nginx/ && \
+            cd /tmp && \
+          tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
 
       - name: Build macOS
         if: matrix.os == 'macos'
@@ -513,7 +596,17 @@ jobs:
           cd nginx && \
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
           ./auto/configure \
-            --prefix=/tmp/nginx \
+            --prefix= \
+            --conf-path=conf/nginx.conf \
+            --pid-path=logs/nginx.pid \
+            --http-log-path=logs/access.log \
+            --error-log-path=logs/error.log \
+            --sbin-path=nginx \
+            --http-client-body-temp-path=temp/client_body_temp \
+            --http-proxy-temp-path=temp/proxy_temp \
+            --http-fastcgi-temp-path=temp/fastcgi_temp \
+            --http-scgi-temp-path=temp/scgi_temp \
+            --http-uwsgi-temp-path=temp/uwsgi_temp \
             --with-compat \
             --with-pcre-jit \
             --with-http_ssl_module \
@@ -541,7 +634,20 @@ jobs:
             --user=nginx \
             --group=nginx
           make -j$(sysctl -n hw.ncpu)
-          make install
+          # make install
+           mkdir -p /tmp/nginx
+          if [ -f objs/nginx ]; then
+            \cp objs/nginx /tmp/nginx/nginx
+          fi
+           \cp -pdr conf /tmp/nginx/
+           \cp -pdr docs/html /tmp/nginx/
+          mkdir -p /tmp/nginx/logs
+          mkdir -p /tmp/nginx/temp/client_body_temp
+          mkdir -p /tmp/nginx/temp/proxy_temp
+          mkdir -p /tmp/nginx/temp/fastcgi_temp
+          mkdir -p /tmp/nginx/temp/scgi_temp
+          mkdir -p /tmp/nginx/temp/uwsgi_temp
+          ls /tmp/nginx/
           cd /tmp
           tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/
           cp nginx_${VERSION}_${{ matrix.suffix }}.tar.gz $GITHUB_WORKSPACE
@@ -588,7 +694,7 @@ jobs:
           ./autogen.sh
           cd ../nginx
           ./auto/configure \
-            --with-cc=cl \
+            --with-cc=gcc \
             --prefix= \
             --conf-path=conf/nginx.conf \
             --pid-path=logs/nginx.pid \
@@ -621,13 +727,18 @@ jobs:
           mingw32-make -j$(nproc)
           # mingw32-make install
           # 修复 Windows 可执行文件扩展名
-           mkdir -p /tmp/nginx/sbin
+           mkdir -p /tmp/nginx
           if [ -f objs/nginx.exe ]; then
-            \cp objs/nginx.exe /tmp/nginx/sbin/nginx.exe
+            \cp objs/nginx.exe /tmp/nginx/nginx.exe
           fi
            \cp -pdr conf /tmp/nginx/
            \cp -pdr docs/html /tmp/nginx/
           mkdir -p /tmp/nginx/logs
+          mkdir -p /tmp/nginx/temp/client_body_temp
+          mkdir -p /tmp/nginx/temp/proxy_temp
+          mkdir -p /tmp/nginx/temp/fastcgi_temp
+          mkdir -p /tmp/nginx/temp/scgi_temp
+          mkdir -p /tmp/nginx/temp/uwsgi_temp
           ls /tmp/nginx/
           cd /tmp
           zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip nginx/
