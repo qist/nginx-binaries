@@ -637,10 +637,10 @@ jobs:
           # make install
            mkdir -p /tmp/nginx
           if [ -f objs/nginx ]; then
-            \cp objs/nginx /tmp/nginx/nginx
+            cp objs/nginx /tmp/nginx/nginx
           fi
-           \cp -pdr conf /tmp/nginx/
-           \cp -pdr docs/html /tmp/nginx/
+           cp -R conf /tmp/nginx/
+           cp -R docs/html /tmp/nginx/
           mkdir -p /tmp/nginx/logs
           mkdir -p /tmp/nginx/temp/client_body_temp
           mkdir -p /tmp/nginx/temp/proxy_temp
