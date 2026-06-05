@@ -589,7 +589,7 @@ jobs:
           cd ../nginx
           ./auto/configure \
             --with-cc=gcc \
-            --prefix=/tmp/nginx \
+            --prefix=. \
             --with-compat \
             --with-pcre=../pcre2 \
             --with-pcre-jit \
@@ -608,15 +608,15 @@ jobs:
             --add-module=../headers-more-nginx-module \
             --add-module=../ngx-fancyindex 
           mingw32-make -j$(nproc)
-          mingw32-make install
+          # mingw32-make install
           # 修复 Windows 可执行文件扩展名
-          # mkdir -p /tmp/nginx/sbin
+           mkdir -p /tmp/nginx/sbin
           if [ -f objs/nginx.exe ]; then
             \cp objs/nginx.exe /tmp/nginx/sbin/nginx.exe
           fi
-          # \cp -pdr conf /tmp/nginx/
-          # \cp -pdr html /tmp/nginx/
-          # mkdir -p /tmp/nginx/logs
+           \cp -pdr conf /tmp/nginx/
+           \cp -pdr docs/html /tmp/nginx/
+          mkdir -p /tmp/nginx/logs
           ls /tmp/nginx/
           cd /tmp
           zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip nginx/
