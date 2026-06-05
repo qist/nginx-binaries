@@ -236,7 +236,6 @@ jobs:
               --with-file-aio \
               --with-http_v3_module \
               --with-openssl-opt=enable-tls1_3 \
-              --with-http_degradation_module \
               --with-openssl=/workspace/quictls \
               --add-module=/workspace/ngx_devel_kit \
               --add-module=/workspace/set-misc-nginx-module \
@@ -344,7 +343,6 @@ jobs:
               --with-file-aio \
               --with-http_v3_module \
               --with-openssl-opt=enable-tls1_3 \
-              --with-http_degradation_module \
               --with-openssl=/workspace/quictls \
               --add-module=/workspace/ngx_devel_kit \
               --add-module=/workspace/set-misc-nginx-module \
@@ -455,7 +453,6 @@ jobs:
             --with-file-aio \
             --with-http_v3_module \
             --with-openssl-opt=enable-tls1_3 \
-            --with-http_degradation_module \
             --with-openssl=../quictls \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
@@ -473,7 +470,7 @@ jobs:
             --add-module=../nginx-dav-ext-module \
             --add-module=../ngx_brotli \
             --add-module=../ngx-fancyindex \
-            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
+            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
             --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now -static-libgcc -static-libstdc++" \
             --user=nginx \
             --group=nginx
@@ -564,7 +561,6 @@ jobs:
               --with-file-aio \
               --with-http_v3_module \
               --with-openssl-opt=enable-tls1_3 \
-              --with-http_degradation_module \
               --with-openssl=/workspace/quictls \
               --add-module=/workspace/ngx_devel_kit \
               --add-module=/workspace/set-misc-nginx-module \
@@ -672,10 +668,8 @@ jobs:
             --with-http_slice_module \
             --with-mail \
             --with-mail_ssl_module \
-            --with-file-aio \
             --with-http_v3_module \
             --with-openssl-opt=enable-tls1_3 \
-            --with-http_degradation_module \
             --with-openssl=../quictls \
             --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types" \
             --add-module=../ngx_devel_kit \
@@ -786,7 +780,6 @@ jobs:
             --with-stream_ssl_module \
             --with-stream_realip_module \
             --with-stream_ssl_preread_module \
-            --with-threads \
             --with-http_secure_link_module \
             --with-http_gunzip_module \
             --with-http_dav_module \
@@ -796,9 +789,7 @@ jobs:
             --with-http_slice_module \
             --with-mail \
             --with-mail_ssl_module \
-            --with-file-aio \
             --with-openssl-opt=enable-tls1_3 \
-            --with-http_degradation_module \
             --with-openssl=../openssl \
             --with-openssl-opt='no-asm no-tests -D_WIN32_WINNT=0x0501' \
             --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768" \
