@@ -397,7 +397,6 @@ jobs:
           git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
           git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
           git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
-          git clone --depth=1 --recursive https://github.com/wdaike/ngx_upstream_jdomain.git
           git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
           git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
           git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
@@ -452,6 +451,7 @@ jobs:
             --with-mail_ssl_module \
             --with-file-aio \
             --with-http_v3_module \
+            --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../quictls \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
@@ -462,14 +462,13 @@ jobs:
             --add-module=../nginx-upsync-module \
             --add-module=../echo-nginx-module \
             --add-module=../mod_zip \
-            --add-module=../ngx_upstream_jdomain \
             --add-module=../nginx-upstream-dynamic-servers \
             --add-module=../headers-more-nginx-module \
             --add-module=../nginx-module-vts \
             --add-module=../nginx-dav-ext-module \
             --add-module=../ngx_brotli \
             --add-module=../ngx-fancyindex \
-            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
+            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
             --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now -static-libgcc -static-libstdc++" \
             --user=nginx \
             --group=nginx
@@ -614,7 +613,6 @@ jobs:
           git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
           git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
           git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
-          git clone --depth=1 --recursive https://github.com/wdaike/ngx_upstream_jdomain.git
           git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
           git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
           git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
@@ -668,6 +666,7 @@ jobs:
             --with-mail \
             --with-mail_ssl_module \
             --with-http_v3_module \
+            --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../quictls \
             --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types" \
             --add-module=../ngx_devel_kit \
@@ -679,7 +678,6 @@ jobs:
             --add-module=../nginx-upsync-module \
             --add-module=../echo-nginx-module \
             --add-module=../mod_zip \
-            --add-module=../ngx_upstream_jdomain \
             --add-module=../nginx-upstream-dynamic-servers \
             --add-module=../headers-more-nginx-module \
             --add-module=../nginx-module-vts \
