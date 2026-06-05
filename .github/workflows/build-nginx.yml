@@ -255,7 +255,7 @@ jobs:
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
               --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
-              --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
+              --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now -static-libgcc -static-libstdc++" \
               --user=nginx \
               --group=nginx && \
             make -j$(nproc) && \
@@ -363,7 +363,7 @@ jobs:
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
               --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
-              --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
+              --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now -static-libgcc -static-libstdc++" \
               --user=nginx \
               --group=nginx && \
             make -j$(nproc) && \
@@ -474,7 +474,7 @@ jobs:
             --add-module=../ngx_brotli \
             --add-module=../ngx-fancyindex \
             --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
-            --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
+            --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now -static-libgcc -static-libstdc++" \
             --user=nginx \
             --group=nginx
           make -j$(nproc)
@@ -583,7 +583,7 @@ jobs:
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
               --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
-              --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
+              --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now -static-libgcc -static-libstdc++" \
               --user=nginx \
               --group=nginx && \
             make -j$(nproc) && \
