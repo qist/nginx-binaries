@@ -211,24 +211,32 @@ jobs:
               --with-compat \
               --with-pcre-jit \
               --with-http_ssl_module \
-              --with-http_v3_module \
               --with-http_stub_status_module \
               --with-http_realip_module \
+              --with-http_auth_request_module \
+              --with-http_addition_module \
               --with-http_gzip_static_module \
               --with-http_sub_module \
-              --with-http_addition_module \
+              --with-http_v2_module \
+              --with-stream \
+              --with-debug \
+              --with-stream_ssl_module \
+              --with-stream_realip_module \
+              --with-stream_ssl_preread_module \
+              --with-threads \
+              --with-http_secure_link_module \
+              --with-http_gunzip_module \
               --with-http_dav_module \
               --with-http_flv_module \
               --with-http_mp4_module \
-              --with-http_gunzip_module \
               --with-http_random_index_module \
-              --with-http_secure_link_module \
-              --with-http_degradation_module \
               --with-http_slice_module \
-              --with-threads \
-              --with-stream \
-              --with-stream_ssl_module \
-              --with-stream_realip_module \
+              --with-mail \
+              --with-mail_ssl_module \
+              --with-file-aio \
+              --with-http_v3_module \
+              --with-openssl-opt=enable-tls1_3 \
+              --with-http_degradation_module \
               --with-openssl=/workspace/quictls \
               --add-module=/workspace/ngx_devel_kit \
               --add-module=/workspace/set-misc-nginx-module \
@@ -246,6 +254,8 @@ jobs:
               --add-module=/workspace/nginx-dav-ext-module \
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
+              --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
+              --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
               --user=nginx \
               --group=nginx && \
             make -j$(nproc) && \
@@ -309,24 +319,32 @@ jobs:
               --with-compat \
               --with-pcre-jit \
               --with-http_ssl_module \
-              --with-http_v3_module \
               --with-http_stub_status_module \
               --with-http_realip_module \
+              --with-http_auth_request_module \
+              --with-http_addition_module \
               --with-http_gzip_static_module \
               --with-http_sub_module \
-              --with-http_addition_module \
+              --with-http_v2_module \
+              --with-stream \
+              --with-debug \
+              --with-stream_ssl_module \
+              --with-stream_realip_module \
+              --with-stream_ssl_preread_module \
+              --with-threads \
+              --with-http_secure_link_module \
+              --with-http_gunzip_module \
               --with-http_dav_module \
               --with-http_flv_module \
               --with-http_mp4_module \
-              --with-http_gunzip_module \
               --with-http_random_index_module \
-              --with-http_secure_link_module \
-              --with-http_degradation_module \
               --with-http_slice_module \
-              --with-threads \
-              --with-stream \
-              --with-stream_ssl_module \
-              --with-stream_realip_module \
+              --with-mail \
+              --with-mail_ssl_module \
+              --with-file-aio \
+              --with-http_v3_module \
+              --with-openssl-opt=enable-tls1_3 \
+              --with-http_degradation_module \
               --with-openssl=/workspace/quictls \
               --add-module=/workspace/ngx_devel_kit \
               --add-module=/workspace/set-misc-nginx-module \
@@ -344,6 +362,8 @@ jobs:
               --add-module=/workspace/nginx-dav-ext-module \
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
+              --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
+              --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
               --user=nginx \
               --group=nginx && \
             make -j$(nproc) && \
@@ -410,24 +430,32 @@ jobs:
             --with-compat \
             --with-pcre-jit \
             --with-http_ssl_module \
-            --with-http_v3_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
+            --with-http_auth_request_module \
+            --with-http_addition_module \
             --with-http_gzip_static_module \
             --with-http_sub_module \
-            --with-http_addition_module \
+            --with-http_v2_module \
+            --with-stream \
+            --with-debug \
+            --with-stream_ssl_module \
+            --with-stream_realip_module \
+            --with-stream_ssl_preread_module \
+            --with-threads \
+            --with-http_secure_link_module \
+            --with-http_gunzip_module \
             --with-http_dav_module \
             --with-http_flv_module \
             --with-http_mp4_module \
-            --with-http_gunzip_module \
             --with-http_random_index_module \
-            --with-http_secure_link_module \
-            --with-http_degradation_module \
             --with-http_slice_module \
-            --with-threads \
-            --with-stream \
-            --with-stream_ssl_module \
-            --with-stream_realip_module \
+            --with-mail \
+            --with-mail_ssl_module \
+            --with-file-aio \
+            --with-http_v3_module \
+            --with-openssl-opt=enable-tls1_3 \
+            --with-http_degradation_module \
             --with-openssl=../quictls \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
@@ -445,6 +473,8 @@ jobs:
             --add-module=../nginx-dav-ext-module \
             --add-module=../ngx_brotli \
             --add-module=../ngx-fancyindex \
+            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
+            --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
             --user=nginx \
             --group=nginx
           make -j$(nproc)
@@ -509,24 +539,32 @@ jobs:
               --with-compat \
               --with-pcre-jit \
               --with-http_ssl_module \
-              --with-http_v3_module \
               --with-http_stub_status_module \
               --with-http_realip_module \
+              --with-http_auth_request_module \
+              --with-http_addition_module \
               --with-http_gzip_static_module \
               --with-http_sub_module \
-              --with-http_addition_module \
+              --with-http_v2_module \
+              --with-stream \
+              --with-debug \
+              --with-stream_ssl_module \
+              --with-stream_realip_module \
+              --with-stream_ssl_preread_module \
+              --with-threads \
+              --with-http_secure_link_module \
+              --with-http_gunzip_module \
               --with-http_dav_module \
               --with-http_flv_module \
               --with-http_mp4_module \
-              --with-http_gunzip_module \
               --with-http_random_index_module \
-              --with-http_secure_link_module \
-              --with-http_degradation_module \
               --with-http_slice_module \
-              --with-threads \
-              --with-stream \
-              --with-stream_ssl_module \
-              --with-stream_realip_module \
+              --with-mail \
+              --with-mail_ssl_module \
+              --with-file-aio \
+              --with-http_v3_module \
+              --with-openssl-opt=enable-tls1_3 \
+              --with-http_degradation_module \
               --with-openssl=/workspace/quictls \
               --add-module=/workspace/ngx_devel_kit \
               --add-module=/workspace/set-misc-nginx-module \
@@ -544,6 +582,8 @@ jobs:
               --add-module=/workspace/nginx-dav-ext-module \
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
+              --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
+              --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
               --user=nginx \
               --group=nginx && \
             make -j$(nproc) && \
@@ -610,11 +650,34 @@ jobs:
             --with-compat \
             --with-pcre-jit \
             --with-http_ssl_module \
-            --with-http_v3_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
+            --with-http_auth_request_module \
+            --with-http_addition_module \
+            --with-http_gzip_static_module \
+            --with-http_sub_module \
+            --with-http_v2_module \
+            --with-stream \
+            --with-debug \
+            --with-stream_ssl_module \
+            --with-stream_realip_module \
+            --with-stream_ssl_preread_module \
+            --with-threads \
+            --with-http_secure_link_module \
+            --with-http_gunzip_module \
+            --with-http_dav_module \
+            --with-http_flv_module \
+            --with-http_mp4_module \
+            --with-http_random_index_module \
+            --with-http_slice_module \
+            --with-mail \
+            --with-mail_ssl_module \
+            --with-file-aio \
+            --with-http_v3_module \
+            --with-openssl-opt=enable-tls1_3 \
+            --with-http_degradation_module \
             --with-openssl=../quictls \
-            --with-cc-opt="-Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types -Wno-deprecated-declarations" \
+            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
@@ -713,7 +776,29 @@ jobs:
             --with-http_ssl_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
+            --with-http_auth_request_module \
             --with-http_addition_module \
+            --with-http_gzip_static_module \
+            --with-http_sub_module \
+            --with-http_v2_module \
+            --with-stream \
+            --with-debug \
+            --with-stream_ssl_module \
+            --with-stream_realip_module \
+            --with-stream_ssl_preread_module \
+            --with-threads \
+            --with-http_secure_link_module \
+            --with-http_gunzip_module \
+            --with-http_dav_module \
+            --with-http_flv_module \
+            --with-http_mp4_module \
+            --with-http_random_index_module \
+            --with-http_slice_module \
+            --with-mail \
+            --with-mail_ssl_module \
+            --with-file-aio \
+            --with-openssl-opt=enable-tls1_3 \
+            --with-http_degradation_module \
             --with-openssl=../openssl \
             --with-openssl-opt='no-asm no-tests -D_WIN32_WINNT=0x0501' \
             --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768" \
