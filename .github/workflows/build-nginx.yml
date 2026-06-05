@@ -182,7 +182,6 @@ jobs:
             git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git && \
             git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git && \
-            git clone --depth=1 --recursive https://github.com/wdaike/ngx_upstream_jdomain.git && \
             git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git && \
             git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
@@ -246,7 +245,6 @@ jobs:
               --add-module=/workspace/nginx-upsync-module \
               --add-module=/workspace/echo-nginx-module \
               --add-module=/workspace/mod_zip \
-              --add-module=/workspace/ngx_upstream_jdomain \
               --add-module=/workspace/nginx-upstream-dynamic-servers \
               --add-module=/workspace/headers-more-nginx-module \
               --add-module=/workspace/nginx-module-vts \
@@ -289,7 +287,6 @@ jobs:
             git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git && \
             git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git && \
-            git clone --depth=1 --recursive https://github.com/wdaike/ngx_upstream_jdomain.git && \
             git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git && \
             git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
@@ -353,7 +350,6 @@ jobs:
               --add-module=/workspace/nginx-upsync-module \
               --add-module=/workspace/echo-nginx-module \
               --add-module=/workspace/mod_zip \
-              --add-module=/workspace/ngx_upstream_jdomain \
               --add-module=/workspace/nginx-upstream-dynamic-servers \
               --add-module=/workspace/headers-more-nginx-module \
               --add-module=/workspace/nginx-module-vts \
@@ -505,7 +501,6 @@ jobs:
             git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git && \
             git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git && \
-            git clone --depth=1 --recursive https://github.com/wdaike/ngx_upstream_jdomain.git && \
             git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git && \
             git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
             git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
@@ -569,7 +564,6 @@ jobs:
               --add-module=/workspace/nginx-upsync-module \
               --add-module=/workspace/echo-nginx-module \
               --add-module=/workspace/mod_zip \
-              --add-module=/workspace/ngx_upstream_jdomain \
               --add-module=/workspace/nginx-upstream-dynamic-servers \
               --add-module=/workspace/headers-more-nginx-module \
               --add-module=/workspace/nginx-module-vts \
