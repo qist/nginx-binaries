@@ -588,8 +588,18 @@ jobs:
           ./autogen.sh
           cd ../nginx
           ./auto/configure \
-            --with-cc=gcc \
-            --prefix=. \
+            --with-cc=cl \
+            --prefix= \
+            --conf-path=conf/nginx.conf \
+            --pid-path=logs/nginx.pid \
+            --http-log-path=logs/access.log \
+            --error-log-path=logs/error.log \
+            --sbin-path=nginx.exe \
+            --http-client-body-temp-path=temp/client_body_temp \
+            --http-proxy-temp-path=temp/proxy_temp \
+            --http-fastcgi-temp-path=temp/fastcgi_temp \
+            --http-scgi-temp-path=temp/scgi_temp \
+            --http-uwsgi-temp-path=temp/uwsgi_temp \
             --with-compat \
             --with-pcre=../pcre2 \
             --with-pcre-jit \
@@ -599,7 +609,8 @@ jobs:
             --with-http_realip_module \
             --with-http_addition_module \
             --with-openssl=../openssl \
-            --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=1024" \
+            --with-openssl-opt='no-asm no-tests -D_WIN32_WINNT=0x0501' \
+            --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768" \
             --with-ld-opt="-L/ucrt64/lib" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
