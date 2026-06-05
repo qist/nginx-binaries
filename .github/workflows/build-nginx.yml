@@ -581,12 +581,6 @@ jobs:
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
           git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
           git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
-          cd ngx_brotli/deps/brotli
-          mkdir -p out && cd out
-          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
-          cmake --build . --config Release --target brotlienc
-          cd ../../../..
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
@@ -612,7 +606,6 @@ jobs:
             --add-module=../ngx_http_substitutions_filter_module \
             --add-module=../nginx-http-auth-digest \
             --add-module=../headers-more-nginx-module \
-            --add-module=../ngx_brotli \
             --add-module=../ngx-fancyindex 
           mingw32-make -j$(nproc)
           mingw32-make install
@@ -620,6 +613,7 @@ jobs:
           if [ -f sbin/nginx ]; then
             mv sbin/nginx sbin/nginx.exe
           fi
+          ls 
           zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip .
 
       - name: Upload artifact
