@@ -171,30 +171,31 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
             sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl automake libtool cmake linux-headers && 
-            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
-            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
-            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git && \
-            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git && \
-            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git && \
-            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git && \
-            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git && \
-            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
-            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
-            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
-            cd ngx_brotli/deps/brotli && \
-            mkdir -p out && cd out && \
-            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed .. && \
-            cmake --build . --config Release --target brotlienc && \
-            make install && \
-            cd ../../../../nginx && \
-            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
+            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
+            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
+            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
+            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
+            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
+            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
+            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
+            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
+            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
+            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
+            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
+            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
+            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
+            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
+            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
+            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
+            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
+            cd ngx_brotli/deps/brotli
+            mkdir -p out && cd out
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
+            cmake --build . --config Release --target brotlienc
+            make install
+            cd /workspace
+            cd nginx
+            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
               --prefix= \
               --conf-path=conf/nginx.conf \
@@ -254,20 +255,20 @@ jobs:
               --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
               --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
               --user=nginx \
-              --group=nginx && \
-            make -j$(nproc) && \
-            mkdir -p /tmp/nginx && \
-            \cp objs/nginx /tmp/nginx/nginx && \
-            \cp -pdr conf /tmp/nginx/  && \
-            \cp -pdr docs/html /tmp/nginx/  && \
-            mkdir -p /tmp/nginx/logs && \
-            mkdir -p /tmp/nginx/temp/client_body_temp && \
-            mkdir -p /tmp/nginx/temp/proxy_temp && \
-            mkdir -p /tmp/nginx/temp/fastcgi_temp && \
-            mkdir -p /tmp/nginx/temp/scgi_temp && \
-            mkdir -p /tmp/nginx/temp/uwsgi_temp && \
-            ls /tmp/nginx/ && \
-            cd /tmp && \
+              --group=nginx
+            make -j$(nproc)
+            mkdir -p /tmp/nginx
+            \cp objs/nginx /tmp/nginx/nginx
+            \cp -pdr conf /tmp/nginx/ 
+            \cp -pdr docs/html /tmp/nginx/ 
+            mkdir -p /tmp/nginx/logs
+            mkdir -p /tmp/nginx/temp/client_body_temp
+            mkdir -p /tmp/nginx/temp/proxy_temp
+            mkdir -p /tmp/nginx/temp/fastcgi_temp
+            mkdir -p /tmp/nginx/temp/scgi_temp
+            mkdir -p /tmp/nginx/temp/uwsgi_temp
+            ls /tmp/nginx/
+            cd /tmp
             tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
 
       - name: Build with Docker (Red Hat)
@@ -275,31 +276,32 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch libxml2-devel libxslt-devel perl perl-IPC-Cmd cmake && \
-            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
-            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
-            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git && \
-            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git && \
-            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git && \
-            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git && \
-            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git && \
-            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
-            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
-            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
-            cd ngx_brotli/deps/brotli && \
-            mkdir -p out && cd out && \
-            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed .. && \
-            cmake --build . --config Release --target brotlienc && \
-            make install && \
-            cd ../../../../nginx && \
-            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
+            bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch libxml2-devel libxslt-devel perl perl-IPC-Cmd cmake
+            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
+            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
+            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
+            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
+            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
+            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
+            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
+            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
+            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
+            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
+            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
+            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
+            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
+            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
+            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
+            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
+            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
+            cd ngx_brotli/deps/brotli
+            mkdir -p out && cd out
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
+            cmake --build . --config Release --target brotlienc
+            make install
+            cd /workspace
+            cd nginx
+            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
               --prefix= \
               --conf-path=conf/nginx.conf \
@@ -359,20 +361,20 @@ jobs:
               --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
               --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
               --user=nginx \
-              --group=nginx && \
-            make -j$(nproc) && \
-            mkdir -p /tmp/nginx && \
-            \cp objs/nginx /tmp/nginx/nginx && \
-            \cp -pdr conf /tmp/nginx/  && \
-            \cp -pdr docs/html /tmp/nginx/  && \
-            mkdir -p /tmp/nginx/logs && \
-            mkdir -p /tmp/nginx/temp/client_body_temp && \
-            mkdir -p /tmp/nginx/temp/proxy_temp && \
-            mkdir -p /tmp/nginx/temp/fastcgi_temp && \
-            mkdir -p /tmp/nginx/temp/scgi_temp && \
-            mkdir -p /tmp/nginx/temp/uwsgi_temp && \
-            ls /tmp/nginx/ && \
-            cd /tmp && \
+              --group=nginx
+            make -j$(nproc)
+            mkdir -p /tmp/nginx
+            \cp objs/nginx /tmp/nginx/nginx
+            \cp -pdr conf /tmp/nginx/ 
+            \cp -pdr docs/html /tmp/nginx/ 
+            mkdir -p /tmp/nginx/logs
+            mkdir -p /tmp/nginx/temp/client_body_temp
+            mkdir -p /tmp/nginx/temp/proxy_temp
+            mkdir -p /tmp/nginx/temp/fastcgi_temp
+            mkdir -p /tmp/nginx/temp/scgi_temp
+            mkdir -p /tmp/nginx/temp/uwsgi_temp
+            ls /tmp/nginx/
+            cd /tmp
             tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
 
       - name: Build directly (Ubuntu/Debian)
@@ -489,31 +491,32 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev cmake && \
-            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git && \
-            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git && \
-            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git && \
-            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git && \
-            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git && \
-            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git && \
-            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git && \
-            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git && \
-            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git && \
-            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git && \
-            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
-            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
-            cd ngx_brotli/deps/brotli && \
-            mkdir -p out && cd out && \
-            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed .. && \
-            cmake --build . --config Release --target brotlienc && \
-            make install && \
-            cd ../../../../nginx && \
-            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
+            bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev cmake
+            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
+            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
+            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
+            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
+            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
+            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
+            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
+            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
+            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
+            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
+            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
+            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
+            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
+            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
+            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
+            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
+            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
+            cd ngx_brotli/deps/brotli
+            mkdir -p out && cd out
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
+            cmake --build . --config Release --target brotlienc
+            make install
+            cd /workspace
+            cd nginx
+            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
               --prefix= \
               --conf-path=conf/nginx.conf \
@@ -573,20 +576,20 @@ jobs:
               --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
               --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
               --user=nginx \
-              --group=nginx && \
-            make -j$(nproc) && \
-            mkdir -p /tmp/nginx && \
-            \cp objs/nginx /tmp/nginx/nginx && \
-            \cp -pdr conf /tmp/nginx/ && \
-            \cp -pdr docs/html /tmp/nginx/ && \
-            mkdir -p /tmp/nginx/logs && \
-            mkdir -p /tmp/nginx/temp/client_body_temp && \
-            mkdir -p /tmp/nginx/temp/proxy_temp && \
-            mkdir -p /tmp/nginx/temp/fastcgi_temp && \
-            mkdir -p /tmp/nginx/temp/scgi_temp && \
-            mkdir -p /tmp/nginx/temp/uwsgi_temp && \
-            ls /tmp/nginx/ && \
-            cd /tmp && \
+              --group=nginx
+            make -j$(nproc)
+            mkdir -p /tmp/nginx
+            \cp objs/nginx /tmp/nginx/nginx
+            \cp -pdr conf /tmp/nginx/
+            \cp -pdr docs/html /tmp/nginx/
+            mkdir -p /tmp/nginx/logs
+            mkdir -p /tmp/nginx/temp/client_body_temp
+            mkdir -p /tmp/nginx/temp/proxy_temp
+            mkdir -p /tmp/nginx/temp/fastcgi_temp
+            mkdir -p /tmp/nginx/temp/scgi_temp
+            mkdir -p /tmp/nginx/temp/uwsgi_temp
+            ls /tmp/nginx/
+            cd /tmp
           tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
 
       - name: Build macOS
@@ -610,18 +613,18 @@ jobs:
           git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
           git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
           git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
-          git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git && \
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git && \
-            cd ngx_brotli/deps/brotli && \
-            mkdir -p out && cd out && \
-            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed .. && \
-            cmake --build . --config Release --target brotlienc && \
-            make install && \
-            cd ../../../.. && \
-          git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git && \
+          git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
+            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
+            cd ngx_brotli/deps/brotli
+            mkdir -p out && cd out
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
+            cmake --build . --config Release --target brotlienc
+            make install
+            cd ../../../..
+          git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
-          cd nginx && \
-          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch && \
+          cd nginx
+          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --prefix= \
             --conf-path=conf/nginx.conf \
