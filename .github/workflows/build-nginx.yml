@@ -608,13 +608,18 @@ jobs:
             --add-module=../headers-more-nginx-module \
             --add-module=../ngx-fancyindex 
           mingw32-make -j$(nproc)
-          mingw32-make install
+          # mingw32-make install
           # 修复 Windows 可执行文件扩展名
-          if [ -f sbin/nginx ]; then
-            mv sbin/nginx sbin/nginx.exe
+          mkdir -p /tmp/nginx/sbin
+          if [ -f objs/nginx.exe ]; then
+            \cp objs/nginx.exe /tmp/nginx/sbin/nginx.exe
           fi
-          ls 
-          zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip .
+          \cp -pdr conf /tmp/nginx/
+          \cp -pdr html /tmp/nginx/
+          mkdir -p /tmp/nginx/logs
+          ls /tmp/nginx/
+          cd /tmp
+          zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip nginx/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
