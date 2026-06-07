@@ -847,7 +847,7 @@ jobs:
             ## Platforms
             - Ubuntu (amd64, arm64)
             - Debian (amd64, arm64)
-            - Red Hat / CentOS / Rocky Linux / AlmaLinux (amd64, arm64)
+            - Red Hat / CentOS / Rocky Linux / AlmaLinux /Oracle (amd64, arm64)
             - Alpine (amd64, arm64)
             - macOS (amd64, arm64)
             - Windows (amd64)
