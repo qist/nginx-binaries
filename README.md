@@ -25,7 +25,6 @@
 | macOS | amd64 | `nginx_{version}_macos_amd64.tar.gz` |
 | macOS | arm64 | `nginx_{version}_macos_arm64.tar.gz` |
 | Windows | amd64 | `nginx_{version}_windows_amd64.zip` |
-| FreeBSD | amd64 | `nginx_{version}_freebsd_amd64.tar.gz` |
 
 ## 编译的模块
 
@@ -61,7 +60,6 @@
 - `nginx-upsync-module` - 动态上游配置
 - `echo-nginx-module` - 响应输出
 - `mod_zip` - ZIP 压缩
-- `ngx_upstream_jdomain` - 域名解析
 - `nginx-upstream-dynamic-servers` - 动态服务器
 - `headers-more-nginx-module` - 自定义响应头
 - `nginx-module-vts` - 虚拟主机状态
