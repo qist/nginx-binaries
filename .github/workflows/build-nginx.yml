@@ -170,7 +170,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            sh -c "apk update && apk add build-base git patch perl autoconf automake libtool cmake pkgconfig linux-headers &&
+            sh -c "set -ex && apk update && apk add build-base git patch perl autoconf automake libtool cmake pkgconfig linux-headers &&
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
@@ -272,8 +272,8 @@ jobs:
               --add-module=/workspace/nginx-dav-ext-module \
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
-              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type \$(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)\" \
-              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now \$(pkg-config --libs  --static libxml-2.0 libxslt libexslt)\" \
+              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type $(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\" \
+              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now $(pkg-config --libs --static libxml-2.0 libxslt libexslt)\" \
               --user=nginx \
               --group=nginx
             make -j$(nproc)
@@ -296,7 +296,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "yum update -y && yum install -y gcc make git patch perl perl-IPC-Cmd cmake pkgconf-pkg-config autoconf automake libtool
+            bash -c "set -ex && yum update -y && yum install -y gcc make git patch perl perl-IPC-Cmd cmake pkgconf-pkg-config autoconf automake libtool
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
@@ -398,8 +398,8 @@ jobs:
               --add-module=/workspace/nginx-dav-ext-module \
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
-              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type \$(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)\" \
-              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now \$(pkg-config --libs  --static libxml-2.0 libxslt libexslt)\" \
+              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type $(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\" \
+              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now $(pkg-config --libs --static libxml-2.0 libxslt libexslt)\" \
               --user=nginx \
               --group=nginx
             make -j$(nproc)
@@ -526,8 +526,8 @@ jobs:
             --add-module=../nginx-dav-ext-module \
             --add-module=../ngx_brotli \
             --add-module=../ngx-fancyindex \
-            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type $(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)" \
-            --with-ld-opt="-Wl,-z,relro -Wl,-z,now $(pkg-config --libs  --static libxml-2.0 libxslt libexslt)" \
+            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type $(pkg-config --cflags --static libxml-2.0 libxslt libexslt)" \
+            --with-ld-opt="-Wl,-z,relro -Wl,-z,now $(pkg-config --libs --static libxml-2.0 libxslt libexslt)" \
             --user=nginx \
             --group=nginx
             make -j$(nproc)
@@ -551,7 +551,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "apt-get update && apt-get install -y build-essential git patch cmake pkg-config autoconf automake libtool
+            bash -c "set -ex && apt-get update && apt-get install -y build-essential git patch cmake pkg-config autoconf automake libtool
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
@@ -653,8 +653,8 @@ jobs:
               --add-module=/workspace/nginx-dav-ext-module \
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
-              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type \$(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)\" \
-              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now \$(pkg-config --libs  --static libxml-2.0 libxslt libexslt)\" \
+              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type $(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\" \
+              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now $(pkg-config --libs --static libxml-2.0 libxslt libexslt)\" \
               --user=nginx \
               --group=nginx
             make -j$(nproc)
@@ -765,7 +765,7 @@ jobs:
             --with-http_xslt_module \
             --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../quictls \
-            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types $(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)" \
+            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types $(pkg-config --cflags --static libxml-2.0 libxslt libexslt)" \
             --with-ld-opt="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
@@ -860,7 +860,7 @@ jobs:
             --with-compat \
             --with-pcre=../pcre2 \
             --with-pcre-jit \
-            --with-zlib=$GITHUB_WORKSPACE/zlib \
+            --with-zlib=../zlib \
             --with-http_ssl_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
