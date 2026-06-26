@@ -181,7 +181,7 @@ jobs:
             git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
             cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-            cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
+            export LDFLAGS="-L/workspace/libs/lib" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -307,7 +307,7 @@ jobs:
             git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
             cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-            cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
+            export LDFLAGS="-L/workspace/libs/lib" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -434,7 +434,7 @@ jobs:
           git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
           cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-          cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
+          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib" && export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include && export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -562,7 +562,7 @@ jobs:
             git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
             cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-            cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
+            export LDFLAGS="-L/workspace/libs/lib" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -689,7 +689,7 @@ jobs:
           git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
           cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-          cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
+          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib" && export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include && export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -766,7 +766,7 @@ jobs:
             --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../quictls \
             --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types $(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)" \
-            --with-ld-opt="-Wl,-z,relro -Wl,-z,now $(pkg-config --libs  --static libxml-2.0 libxslt libexslt)" \
+            --with-ld-opt="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
