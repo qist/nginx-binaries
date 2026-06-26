@@ -175,10 +175,11 @@ jobs:
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
             git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+            cd zlib && ./configure --prefix=/workspace/libs --static && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
             cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/zlib && make -j$(nproc) install && cd /workspace
+            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
             cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -207,6 +208,9 @@ jobs:
             export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
             export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
             export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+            export LDFLAGS="-L/workspace/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+            export C_INCLUDE_PATH=/workspace/libs/include
+            export LIBRARY_PATH=/workspace/libs/lib
             export PATH=/workspace/libs/bin:$PATH
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
@@ -292,15 +296,16 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "yum update -y && yum install -y gcc make git patch perl perl-IPC-Cmd cmake pkgconfig autoconf automake libtool
+            bash -c "yum update -y && yum install -y gcc make git patch perl perl-IPC-Cmd cmake pkgconf-pkg-config autoconf automake libtool
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
             git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+            cd zlib && ./configure --prefix=/workspace/libs --static && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
             cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/zlib && make -j$(nproc) install && cd /workspace
+            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
             cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -329,6 +334,9 @@ jobs:
             export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
             export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
             export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+            export LDFLAGS="-L/workspace/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+            export C_INCLUDE_PATH=/workspace/libs/include
+            export LIBRARY_PATH=/workspace/libs/lib
             export PATH=/workspace/libs/bin:$PATH
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
@@ -420,10 +428,11 @@ jobs:
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           cd pcre2 && ./autogen.sh && cd ..
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+          cd zlib && ./configure --prefix=$GITHUB_WORKSPACE/libs --static && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
           cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
           git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-          cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/zlib && make -j$(nproc) install && cd ..
+          cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
           cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -453,6 +462,9 @@ jobs:
           export PKG_CONFIG_PATH=$GITHUB_WORKSPACE/libs/lib/pkgconfig:$GITHUB_WORKSPACE/libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
           export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
           export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+          export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include
+          export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib
           export PATH=$GITHUB_WORKSPACE/libs/bin:$PATH
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
@@ -544,10 +556,11 @@ jobs:
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
             git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+            cd zlib && ./configure --prefix=/workspace/libs --static && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
             cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/zlib && make -j$(nproc) install && cd /workspace
+            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
             cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -576,6 +589,9 @@ jobs:
             export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
             export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
             export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+            export LDFLAGS="-L/workspace/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+            export C_INCLUDE_PATH=/workspace/libs/include
+            export LIBRARY_PATH=/workspace/libs/lib
             export PATH=/workspace/libs/bin:$PATH
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
@@ -667,10 +683,11 @@ jobs:
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           cd pcre2 && ./autogen.sh && cd ..
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+          cd zlib && ./configure --prefix=$GITHUB_WORKSPACE/libs --static && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
           cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
           git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-          cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/zlib && make -j$(nproc) install && cd ..
+          cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
           cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
@@ -700,6 +717,9 @@ jobs:
           export PKG_CONFIG_PATH=$GITHUB_WORKSPACE/libs/lib/pkgconfig:$GITHUB_WORKSPACE/libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
           export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
           export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+          export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include
+          export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib
           export PATH=$GITHUB_WORKSPACE/libs/bin:$PATH
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
