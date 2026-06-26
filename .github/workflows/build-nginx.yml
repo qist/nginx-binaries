@@ -170,7 +170,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            sh -c "apk update && apk add build-base git patch perl autoconf automake libtool cmake linux-headers &&
+            sh -c "apk update && apk add build-base git patch perl autoconf automake libtool cmake pkgconfig linux-headers &&
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
@@ -205,15 +205,8 @@ jobs:
             cd /workspace
             cd nginx
             export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-            # Wrapper scripts to force --static flag for xml2-config/xslt-config
-            mv /workspace/libs/bin/xml2-config /workspace/libs/bin/xml2-config.real
-            echo '#!/bin/sh' > /workspace/libs/bin/xml2-config
-            echo 'exec /workspace/libs/bin/xml2-config.real $@ --static' >> /workspace/libs/bin/xml2-config
-            chmod +x /workspace/libs/bin/xml2-config
-            mv /workspace/libs/bin/xslt-config /workspace/libs/bin/xslt-config.real
-            echo '#!/bin/sh' > /workspace/libs/bin/xslt-config
-            echo 'exec /workspace/libs/bin/xslt-config.real $@ --static' >> /workspace/libs/bin/xslt-config
-            chmod +x /workspace/libs/bin/xslt-config
+            export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
+            export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
             export PATH=/workspace/libs/bin:$PATH
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
@@ -275,8 +268,8 @@ jobs:
               --add-module=/workspace/nginx-dav-ext-module \
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
-              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type\" \
-              --with-ld-opt=\"-pie -Wl,-z,relro -Wl,-z,now\" \
+              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type \$(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)\" \
+              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now \$(pkg-config --libs  --static libxml-2.0 libxslt libexslt)\" \
               --user=nginx \
               --group=nginx
             make -j$(nproc)
@@ -299,7 +292,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "yum update -y && yum install -y gcc make git patch perl perl-IPC-Cmd cmake autoconf automake libtool
+            bash -c "yum update -y && yum install -y gcc make git patch perl perl-IPC-Cmd cmake pkgconfig autoconf automake libtool
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
@@ -334,15 +327,8 @@ jobs:
             cd /workspace
             cd nginx
             export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-            # Wrapper scripts to force --static flag for xml2-config/xslt-config
-            mv /workspace/libs/bin/xml2-config /workspace/libs/bin/xml2-config.real
-            echo '#!/bin/sh' > /workspace/libs/bin/xml2-config
-            echo 'exec /workspace/libs/bin/xml2-config.real $@ --static' >> /workspace/libs/bin/xml2-config
-            chmod +x /workspace/libs/bin/xml2-config
-            mv /workspace/libs/bin/xslt-config /workspace/libs/bin/xslt-config.real
-            echo '#!/bin/sh' > /workspace/libs/bin/xslt-config
-            echo 'exec /workspace/libs/bin/xslt-config.real $@ --static' >> /workspace/libs/bin/xslt-config
-            chmod +x /workspace/libs/bin/xslt-config
+            export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
+            export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
             export PATH=/workspace/libs/bin:$PATH
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
@@ -404,8 +390,8 @@ jobs:
               --add-module=/workspace/nginx-dav-ext-module \
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
-              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type\" \
-              --with-ld-opt=\"-pie -Wl,-z,relro -Wl,-z,now\" \
+              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type \$(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)\" \
+              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now \$(pkg-config --libs  --static libxml-2.0 libxslt libexslt)\" \
               --user=nginx \
               --group=nginx
             make -j$(nproc)
@@ -428,18 +414,18 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           sudo apt-get update
-          sudo apt-get install -y build-essential git patch cmake autoconf automake libtool
+          sudo apt-get install -y build-essential git patch cmake pkg-config autoconf automake libtool
           
           git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           cd pcre2 && ./autogen.sh && cd ..
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
           git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
-          cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=../../libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
+          cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
           git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-          cd libxml2 && autoreconf -fi && ./configure --prefix=../libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=../zlib && make -j$(nproc) install && cd ..
+          cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/zlib && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-          cd libxslt && autoreconf -fi && ./configure --prefix=../libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
+          cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -464,17 +450,10 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
-          export PKG_CONFIG_PATH=$PWD/../libs/lib/pkgconfig:$PWD/../libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-          # Wrapper scripts to force --static flag for xml2-config/xslt-config
-          mv $PWD/../libs/bin/xml2-config $PWD/../libs/bin/xml2-config.real
-          echo '#!/bin/sh' > $PWD/../libs/bin/xml2-config
-          echo 'exec $PWD/../libs/bin/xml2-config.real $@ --static' >> $PWD/../libs/bin/xml2-config
-          chmod +x $PWD/../libs/bin/xml2-config
-          mv $PWD/../libs/bin/xslt-config $PWD/../libs/bin/xslt-config.real
-          echo '#!/bin/sh' > $PWD/../libs/bin/xslt-config
-          echo 'exec $PWD/../libs/bin/xslt-config.real $@ --static' >> $PWD/../libs/bin/xslt-config
-          chmod +x $PWD/../libs/bin/xslt-config
-          export PATH=$PWD/../libs/bin:$PATH
+          export PKG_CONFIG_PATH=$GITHUB_WORKSPACE/libs/lib/pkgconfig:$GITHUB_WORKSPACE/libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
+          export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
+          export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+          export PATH=$GITHUB_WORKSPACE/libs/bin:$PATH
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --prefix= \
@@ -490,7 +469,7 @@ jobs:
             --http-uwsgi-temp-path=temp/uwsgi_temp \
             --with-compat \
             --with-pcre=../pcre2 \
-            --with-zlib=../zlib \
+            --with-zlib=$GITHUB_WORKSPACE/zlib \
             --with-pcre-jit \
             --with-http_ssl_module \
             --with-http_stub_status_module \
@@ -535,8 +514,8 @@ jobs:
             --add-module=../nginx-dav-ext-module \
             --add-module=../ngx_brotli \
             --add-module=../ngx-fancyindex \
-            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type" \
-            --with-ld-opt="-pie -Wl,-z,relro -Wl,-z,now" \
+            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type $(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)" \
+            --with-ld-opt="-Wl,-z,relro -Wl,-z,now $(pkg-config --libs  --static libxml-2.0 libxslt libexslt)" \
             --user=nginx \
             --group=nginx
             make -j$(nproc)
@@ -560,7 +539,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "apt-get update && apt-get install -y build-essential git patch cmake autoconf automake libtool
+            bash -c "apt-get update && apt-get install -y build-essential git patch cmake pkg-config autoconf automake libtool
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
@@ -595,15 +574,8 @@ jobs:
             cd /workspace
             cd nginx
             export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-            # Wrapper scripts to force --static flag for xml2-config/xslt-config
-            mv /workspace/libs/bin/xml2-config /workspace/libs/bin/xml2-config.real
-            echo '#!/bin/sh' > /workspace/libs/bin/xml2-config
-            echo 'exec /workspace/libs/bin/xml2-config.real $@ --static' >> /workspace/libs/bin/xml2-config
-            chmod +x /workspace/libs/bin/xml2-config
-            mv /workspace/libs/bin/xslt-config /workspace/libs/bin/xslt-config.real
-            echo '#!/bin/sh' > /workspace/libs/bin/xslt-config
-            echo 'exec /workspace/libs/bin/xslt-config.real $@ --static' >> /workspace/libs/bin/xslt-config
-            chmod +x /workspace/libs/bin/xslt-config
+            export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
+            export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
             export PATH=/workspace/libs/bin:$PATH
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
@@ -665,8 +637,8 @@ jobs:
               --add-module=/workspace/nginx-dav-ext-module \
               --add-module=/workspace/ngx_brotli \
               --add-module=/workspace/ngx-fancyindex \
-              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type\" \
-              --with-ld-opt=\"-pie -Wl,-z,relro -Wl,-z,now\" \
+              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type \$(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)\" \
+              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now \$(pkg-config --libs  --static libxml-2.0 libxslt libexslt)\" \
               --user=nginx \
               --group=nginx
             make -j$(nproc)
@@ -688,7 +660,7 @@ jobs:
         if: matrix.os == 'macos'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          brew install pcre zlib cmake autoconf automake libtool
+          brew install pcre zlib cmake pkg-config autoconf automake libtool
           PCRE_PREFIX=$(brew --prefix pcre)
           ZLIB_PREFIX=$(brew --prefix zlib)
           git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
@@ -696,11 +668,11 @@ jobs:
           cd pcre2 && ./autogen.sh && cd ..
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
           git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
-          cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=../../libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
+          cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
           git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-          cd libxml2 && autoreconf -fi && ./configure --prefix=../libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=../zlib && make -j$(nproc) install && cd ..
+          cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/zlib && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-          cd libxslt && autoreconf -fi && ./configure --prefix=../libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
+          cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -725,17 +697,10 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
-          export PKG_CONFIG_PATH=$PWD/../libs/lib/pkgconfig:$PWD/../libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-          # Wrapper scripts to force --static flag for xml2-config/xslt-config
-          mv $PWD/../libs/bin/xml2-config $PWD/../libs/bin/xml2-config.real
-          echo '#!/bin/sh' > $PWD/../libs/bin/xml2-config
-          echo 'exec $PWD/../libs/bin/xml2-config.real $@ --static' >> $PWD/../libs/bin/xml2-config
-          chmod +x $PWD/../libs/bin/xml2-config
-          mv $PWD/../libs/bin/xslt-config $PWD/../libs/bin/xslt-config.real
-          echo '#!/bin/sh' > $PWD/../libs/bin/xslt-config
-          echo 'exec $PWD/../libs/bin/xslt-config.real $@ --static' >> $PWD/../libs/bin/xslt-config
-          chmod +x $PWD/../libs/bin/xslt-config
-          export PATH=$PWD/../libs/bin:$PATH
+          export PKG_CONFIG_PATH=$GITHUB_WORKSPACE/libs/lib/pkgconfig:$GITHUB_WORKSPACE/libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
+          export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
+          export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+          export PATH=$GITHUB_WORKSPACE/libs/bin:$PATH
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --prefix= \
@@ -751,7 +716,7 @@ jobs:
             --http-uwsgi-temp-path=temp/uwsgi_temp \
             --with-compat \
             --with-pcre=../pcre2 \
-            --with-zlib=../zlib \
+            --with-zlib=$GITHUB_WORKSPACE/zlib \
             --with-pcre-jit \
             --with-http_ssl_module \
             --with-http_stub_status_module \
@@ -780,7 +745,8 @@ jobs:
             --with-http_xslt_module \
             --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../quictls \
-            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types" \
+            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types $(pkg-config --cflags  --static libxml-2.0 libxslt libexslt)" \
+            --with-ld-opt="-Wl,-z,relro -Wl,-z,now $(pkg-config --libs  --static libxml-2.0 libxslt libexslt)" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
             --add-module=../ngx_http_substitutions_filter_module \
@@ -874,7 +840,7 @@ jobs:
             --with-compat \
             --with-pcre=../pcre2 \
             --with-pcre-jit \
-            --with-zlib=../zlib \
+            --with-zlib=$GITHUB_WORKSPACE/zlib \
             --with-http_ssl_module \
             --with-http_stub_status_module \
             --with-http_realip_module \
