@@ -170,8 +170,10 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            sh -c "apk update && apk add build-base pcre-dev zlib-dev git patch libxml2-dev libxslt-dev perl automake libtool cmake linux-headers && 
+            sh -c "apk update && apk add build-base git patch libxml2-dev libxslt-dev perl automake libtool cmake linux-headers &&
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
+            git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
+            git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -209,6 +211,8 @@ jobs:
               --http-scgi-temp-path=temp/scgi_temp \
               --http-uwsgi-temp-path=temp/uwsgi_temp \
               --with-compat \
+              --with-pcre=/workspace/pcre2 \
+              --with-zlib=/workspace/zlib \
               --with-pcre-jit \
               --with-http_ssl_module \
               --with-http_stub_status_module \
@@ -276,8 +280,10 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "yum update -y && yum install -y gcc make pcre-devel zlib-devel git patch libxml2-devel libxslt-devel perl perl-IPC-Cmd cmake
+            bash -c "yum update -y && yum install -y gcc make git patch libxml2-devel libxslt-devel perl perl-IPC-Cmd cmake
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
+            git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
+            git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -315,6 +321,8 @@ jobs:
               --http-scgi-temp-path=temp/scgi_temp \
               --http-uwsgi-temp-path=temp/uwsgi_temp \
               --with-compat \
+              --with-pcre=/workspace/pcre2 \
+              --with-zlib=/workspace/zlib \
               --with-pcre-jit \
               --with-http_ssl_module \
               --with-http_stub_status_module \
@@ -382,9 +390,11 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           sudo apt-get update
-          sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev cmake
+          sudo apt-get install -y build-essential git patch libxml2-dev libxslt1-dev cmake
           
           git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
+          git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
+          git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -423,6 +433,8 @@ jobs:
             --http-scgi-temp-path=temp/scgi_temp \
             --http-uwsgi-temp-path=temp/uwsgi_temp \
             --with-compat \
+            --with-pcre=../pcre2 \
+            --with-zlib=../zlib \
             --with-pcre-jit \
             --with-http_ssl_module \
             --with-http_stub_status_module \
@@ -491,8 +503,10 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "apt-get update && apt-get install -y build-essential libpcre3-dev zlib1g-dev git patch libxml2-dev libxslt1-dev cmake
+            bash -c "apt-get update && apt-get install -y build-essential git patch libxml2-dev libxslt1-dev cmake
             git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
+            git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
+            git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -530,6 +544,8 @@ jobs:
               --http-scgi-temp-path=temp/scgi_temp \
               --http-uwsgi-temp-path=temp/uwsgi_temp \
               --with-compat \
+              --with-pcre=/workspace/pcre2 \
+              --with-zlib=/workspace/zlib \
               --with-pcre-jit \
               --with-http_ssl_module \
               --with-http_stub_status_module \
@@ -600,6 +616,8 @@ jobs:
           PCRE_PREFIX=$(brew --prefix pcre)
           ZLIB_PREFIX=$(brew --prefix zlib)
           git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
+          git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
+          git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -638,6 +656,8 @@ jobs:
             --http-scgi-temp-path=temp/scgi_temp \
             --http-uwsgi-temp-path=temp/uwsgi_temp \
             --with-compat \
+            --with-pcre=../pcre2 \
+            --with-zlib=../zlib \
             --with-pcre-jit \
             --with-http_ssl_module \
             --with-http_stub_status_module \
