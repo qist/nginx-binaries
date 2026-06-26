@@ -175,6 +175,12 @@ jobs:
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
             git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+            git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
+            cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
+            git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
+            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/zlib && make -j$(nproc) install && cd /workspace
+            git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
+            cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -198,6 +204,17 @@ jobs:
             make install
             cd /workspace
             cd nginx
+            export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
+            # Wrapper scripts to force --static flag for xml2-config/xslt-config
+            mv /workspace/libs/bin/xml2-config /workspace/libs/bin/xml2-config.real
+            echo '#!/bin/sh' > /workspace/libs/bin/xml2-config
+            echo 'exec /workspace/libs/bin/xml2-config.real $@ --static' >> /workspace/libs/bin/xml2-config
+            chmod +x /workspace/libs/bin/xml2-config
+            mv /workspace/libs/bin/xslt-config /workspace/libs/bin/xslt-config.real
+            echo '#!/bin/sh' > /workspace/libs/bin/xslt-config
+            echo 'exec /workspace/libs/bin/xslt-config.real $@ --static' >> /workspace/libs/bin/xslt-config
+            chmod +x /workspace/libs/bin/xslt-config
+            export PATH=/workspace/libs/bin:$PATH
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
               --prefix= \
@@ -240,6 +257,7 @@ jobs:
               --with-mail_ssl_module \
               --with-file-aio \
               --with-http_v3_module \
+              --with-http_xslt_module \
               --with-openssl-opt=enable-tls1_3 \
               --with-openssl=/workspace/quictls \
               --add-module=/workspace/ngx_devel_kit \
@@ -286,6 +304,12 @@ jobs:
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
             git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+            git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
+            cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
+            git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
+            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/zlib && make -j$(nproc) install && cd /workspace
+            git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
+            cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -309,6 +333,17 @@ jobs:
             make install
             cd /workspace
             cd nginx
+            export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
+            # Wrapper scripts to force --static flag for xml2-config/xslt-config
+            mv /workspace/libs/bin/xml2-config /workspace/libs/bin/xml2-config.real
+            echo '#!/bin/sh' > /workspace/libs/bin/xml2-config
+            echo 'exec /workspace/libs/bin/xml2-config.real $@ --static' >> /workspace/libs/bin/xml2-config
+            chmod +x /workspace/libs/bin/xml2-config
+            mv /workspace/libs/bin/xslt-config /workspace/libs/bin/xslt-config.real
+            echo '#!/bin/sh' > /workspace/libs/bin/xslt-config
+            echo 'exec /workspace/libs/bin/xslt-config.real $@ --static' >> /workspace/libs/bin/xslt-config
+            chmod +x /workspace/libs/bin/xslt-config
+            export PATH=/workspace/libs/bin:$PATH
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
               --prefix= \
@@ -351,6 +386,7 @@ jobs:
               --with-mail_ssl_module \
               --with-file-aio \
               --with-http_v3_module \
+              --with-http_xslt_module \
               --with-openssl-opt=enable-tls1_3 \
               --with-openssl=/workspace/quictls \
               --add-module=/workspace/ngx_devel_kit \
@@ -398,6 +434,12 @@ jobs:
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           cd pcre2 && ./autogen.sh && cd ..
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+          git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
+          cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=../../libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
+          git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
+          cd libxml2 && autoreconf -fi && ./configure --prefix=../libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=../zlib && make -j$(nproc) install && cd ..
+          git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
+          cd libxslt && autoreconf -fi && ./configure --prefix=../libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -422,6 +464,17 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
+          export PKG_CONFIG_PATH=$PWD/../libs/lib/pkgconfig:$PWD/../libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
+          # Wrapper scripts to force --static flag for xml2-config/xslt-config
+          mv $PWD/../libs/bin/xml2-config $PWD/../libs/bin/xml2-config.real
+          echo '#!/bin/sh' > $PWD/../libs/bin/xml2-config
+          echo 'exec $PWD/../libs/bin/xml2-config.real $@ --static' >> $PWD/../libs/bin/xml2-config
+          chmod +x $PWD/../libs/bin/xml2-config
+          mv $PWD/../libs/bin/xslt-config $PWD/../libs/bin/xslt-config.real
+          echo '#!/bin/sh' > $PWD/../libs/bin/xslt-config
+          echo 'exec $PWD/../libs/bin/xslt-config.real $@ --static' >> $PWD/../libs/bin/xslt-config
+          chmod +x $PWD/../libs/bin/xslt-config
+          export PATH=$PWD/../libs/bin:$PATH
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --prefix= \
@@ -464,6 +517,7 @@ jobs:
             --with-mail_ssl_module \
             --with-file-aio \
             --with-http_v3_module \
+            --with-http_xslt_module \
             --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../quictls \
             --add-module=../ngx_devel_kit \
@@ -511,6 +565,12 @@ jobs:
             git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
             cd pcre2 && ./autogen.sh && cd ..
             git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+            git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
+            cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
+            git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
+            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/zlib && make -j$(nproc) install && cd /workspace
+            git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
+            cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -534,6 +594,17 @@ jobs:
             make install
             cd /workspace
             cd nginx
+            export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
+            # Wrapper scripts to force --static flag for xml2-config/xslt-config
+            mv /workspace/libs/bin/xml2-config /workspace/libs/bin/xml2-config.real
+            echo '#!/bin/sh' > /workspace/libs/bin/xml2-config
+            echo 'exec /workspace/libs/bin/xml2-config.real $@ --static' >> /workspace/libs/bin/xml2-config
+            chmod +x /workspace/libs/bin/xml2-config
+            mv /workspace/libs/bin/xslt-config /workspace/libs/bin/xslt-config.real
+            echo '#!/bin/sh' > /workspace/libs/bin/xslt-config
+            echo 'exec /workspace/libs/bin/xslt-config.real $@ --static' >> /workspace/libs/bin/xslt-config
+            chmod +x /workspace/libs/bin/xslt-config
+            export PATH=/workspace/libs/bin:$PATH
             patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
             ./auto/configure \
               --prefix= \
@@ -576,6 +647,7 @@ jobs:
               --with-mail_ssl_module \
               --with-file-aio \
               --with-http_v3_module \
+              --with-http_xslt_module \
               --with-openssl-opt=enable-tls1_3 \
               --with-openssl=/workspace/quictls \
               --add-module=/workspace/ngx_devel_kit \
@@ -623,6 +695,12 @@ jobs:
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           cd pcre2 && ./autogen.sh && cd ..
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+          git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
+          cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=../../libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
+          git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
+          cd libxml2 && autoreconf -fi && ./configure --prefix=../libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=../zlib && make -j$(nproc) install && cd ..
+          git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
+          cd libxslt && autoreconf -fi && ./configure --prefix=../libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -647,6 +725,17 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           
           cd nginx
+          export PKG_CONFIG_PATH=$PWD/../libs/lib/pkgconfig:$PWD/../libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
+          # Wrapper scripts to force --static flag for xml2-config/xslt-config
+          mv $PWD/../libs/bin/xml2-config $PWD/../libs/bin/xml2-config.real
+          echo '#!/bin/sh' > $PWD/../libs/bin/xml2-config
+          echo 'exec $PWD/../libs/bin/xml2-config.real $@ --static' >> $PWD/../libs/bin/xml2-config
+          chmod +x $PWD/../libs/bin/xml2-config
+          mv $PWD/../libs/bin/xslt-config $PWD/../libs/bin/xslt-config.real
+          echo '#!/bin/sh' > $PWD/../libs/bin/xslt-config
+          echo 'exec $PWD/../libs/bin/xslt-config.real $@ --static' >> $PWD/../libs/bin/xslt-config
+          chmod +x $PWD/../libs/bin/xslt-config
+          export PATH=$PWD/../libs/bin:$PATH
           patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
           ./auto/configure \
             --prefix= \
@@ -688,6 +777,7 @@ jobs:
             --with-mail \
             --with-mail_ssl_module \
             --with-http_v3_module \
+            --with-http_xslt_module \
             --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../quictls \
             --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types" \
@@ -736,6 +826,8 @@ jobs:
           install: >-
             mingw-w64-ucrt-x86_64-toolchain
             mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-libxml2
+            mingw-w64-ucrt-x86_64-libxslt
             mingw-w64-ucrt-x86_64-libtool
             autoconf
             automake
@@ -808,7 +900,7 @@ jobs:
             --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../openssl \
             --with-openssl-opt='no-asm no-tests -D_WIN32_WINNT=0x0501' \
-            --with-cc-opt="-I/ucrt64/include -DFD_SETSIZE=32768" \
+            --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768" \
             --with-ld-opt="-L/ucrt64/lib" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
