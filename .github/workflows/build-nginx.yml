@@ -181,7 +181,7 @@ jobs:
             git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
             cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-            export LDFLAGS="-L/workspace/libs/lib" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
+            export LDFLAGS=\"-L/workspace/libs/lib\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -206,9 +206,9 @@ jobs:
             cd /workspace
             cd nginx
             export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-            export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
-            export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
-            export LDFLAGS="-L/workspace/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+            export CFLAGS=\"$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\"
+            export LIBS=\"$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
+            export LDFLAGS=\"-L/workspace/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
             export C_INCLUDE_PATH=/workspace/libs/include
             export LIBRARY_PATH=/workspace/libs/lib
             export PATH=/workspace/libs/bin:$PATH
@@ -307,7 +307,7 @@ jobs:
             git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
             cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-            export LDFLAGS="-L/workspace/libs/lib" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
+            export LDFLAGS=\"-L/workspace/libs/lib\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -332,9 +332,9 @@ jobs:
             cd /workspace
             cd nginx
             export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-            export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
-            export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
-            export LDFLAGS="-L/workspace/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+            export CFLAGS=\"$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\"
+            export LIBS=\"$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
+            export LDFLAGS=\"-L/workspace/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
             export C_INCLUDE_PATH=/workspace/libs/include
             export LIBRARY_PATH=/workspace/libs/lib
             export PATH=/workspace/libs/bin:$PATH
@@ -562,7 +562,7 @@ jobs:
             git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
             cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-            export LDFLAGS="-L/workspace/libs/lib" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
+            export LDFLAGS=\"-L/workspace/libs/lib\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -587,9 +587,9 @@ jobs:
             cd /workspace
             cd nginx
             export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-            export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
-            export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
-            export LDFLAGS="-L/workspace/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
+            export CFLAGS=\"$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\"
+            export LIBS=\"$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
+            export LDFLAGS=\"-L/workspace/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
             export C_INCLUDE_PATH=/workspace/libs/include
             export LIBRARY_PATH=/workspace/libs/lib
             export PATH=/workspace/libs/bin:$PATH
