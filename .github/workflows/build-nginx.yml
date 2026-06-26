@@ -178,10 +178,10 @@ jobs:
             cd zlib && ./configure --prefix=/workspace/libs --static && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
             cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-            export LDFLAGS=\"-L/workspace/libs/lib\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
+            curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
+            cd libxml2 && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
+            curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
+            export LDFLAGS=\"-L/workspace/libs/lib\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -304,10 +304,10 @@ jobs:
             cd zlib && ./configure --prefix=/workspace/libs --static && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
             cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-            export LDFLAGS=\"-L/workspace/libs/lib\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
+            curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
+            cd libxml2 && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
+            curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
+            export LDFLAGS=\"-L/workspace/libs/lib\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -431,10 +431,10 @@ jobs:
           cd zlib && ./configure --prefix=$GITHUB_WORKSPACE/libs --static && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
           cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
-          git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-          cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
-          git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib" && export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include && export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
+          curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
+          cd libxml2 && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
+          curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
+          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib" && export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include && export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib && cd libxslt && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -559,10 +559,10 @@ jobs:
             cd zlib && ./configure --prefix=/workspace/libs --static && make -j$(nproc) install && cd /workspace
             git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
             cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-            cd libxml2 && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-            export LDFLAGS=\"-L/workspace/libs/lib\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
+            curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
+            cd libxml2 && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
+            curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
+            export LDFLAGS=\"-L/workspace/libs/lib\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib && cd libxslt && ./configure --prefix=/workspace/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
             git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
             git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
             git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -686,10 +686,10 @@ jobs:
           cd zlib && ./configure --prefix=$GITHUB_WORKSPACE/libs --static && make -j$(nproc) install && cd ..
           git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
           cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
-          git clone --depth=1 --recursive -b v2.12.9 https://gitlab.gnome.org/GNOME/libxml2.git
-          cd libxml2 && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
-          git clone --depth=1 --recursive -b v1.1.39 https://gitlab.gnome.org/GNOME/libxslt.git
-          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib" && export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include && export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib && cd libxslt && autoreconf -fi && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
+          curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
+          cd libxml2 && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
+          curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
+          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib" && export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include && export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib && cd libxslt && ./configure --prefix=$GITHUB_WORKSPACE/libs --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
