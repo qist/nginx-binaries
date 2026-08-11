@@ -137,29 +137,26 @@ jobs:
             bash -c "set -ex
             # 安装官方 vault 归档源 + SCL(devtoolset-9)
             # arm64 源在 altarch 路径下, x86_64 在常规路径; 用 ALT 变量区分
-            ALT=""
-            if [ "${{ matrix.arch }}" = "arm64" ]; then ALT="altarch"; fi
-            C7_BASE="https://vault.centos.org"
-            [ -n "\$ALT" ] && C7_BASE="https://vault.centos.org/\$ALT"
+            if [ "${{ matrix.arch }}" = "arm64" ]; then C7_ALT="/altarch"; C7_ARCH="aarch64"; else C7_ALT=""; C7_ARCH="x86_64"; fi
             cat > /etc/yum.repos.d/CentOS-Base.repo <<EOF
           [base]
           name=CentOS-7.9.2009 - Base
-          baseurl=\${C7_BASE}/7.9.2009/os/\$basearch/
+          baseurl=https://vault.centos.org\${C7_ALT}/7.9.2009/os/\${C7_ARCH}/
           gpgcheck=0
           enabled=1
           [updates]
           name=CentOS-7.9.2009 - Updates
-          baseurl=\${C7_BASE}/7.9.2009/updates/\$basearch/
+          baseurl=https://vault.centos.org\${C7_ALT}/7.9.2009/updates/\${C7_ARCH}/
           gpgcheck=0
           enabled=1
           [extras]
           name=CentOS-7.9.2009 - Extras
-          baseurl=\${C7_BASE}/7.9.2009/extras/\$basearch/
+          baseurl=https://vault.centos.org\${C7_ALT}/7.9.2009/extras/\${C7_ARCH}/
           gpgcheck=0
           enabled=1
           [sclo-rh]
           name=CentOS-7.9.2009 - SCLo-rh
-          baseurl=\${C7_BASE}/7.9.2009/sclo/\$basearch/rh/
+          baseurl=https://vault.centos.org\${C7_ALT}/7.9.2009/sclo/\${C7_ARCH}/rh/
           gpgcheck=0
           enabled=1
           EOF
@@ -177,7 +174,7 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            sh -c "set -ex && apk update && apk add build-base git patch perl autoconf automake libtool cmake pkgconfig linux-headers curl xz &&
+            sh -c "set -ex && apk update && apk add build-base git patch perl autoconf automake libtool cmake pkgconfig linux-headers curl xz bash &&
             MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs bash /workspace/scripts/ci-build.sh /workspace $VERSION ${{ matrix.suffix }} tar.gz"
 
       - name: Build macOS
