@@ -161,7 +161,7 @@ jobs:
           EOF
           yum install -y gcc gcc-c++ make git patch perl perl-IPC-Cmd autoconf automake libtool \
             devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils \
-            xz cmake3 pkgconfig curl
+            xz cmake3 pkgconfig curl file
           # 启用 devtoolset-9 (gcc 9) 并让 cmake 指向 cmake3
           source /opt/rh/devtoolset-9/enable
           ln -sf \$(command -v cmake3 || command -v cmake) /usr/local/bin/cmake
