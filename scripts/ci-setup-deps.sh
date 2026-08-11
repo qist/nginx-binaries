@@ -62,7 +62,7 @@ echo "==> [ci-setup-deps] MODULE_ROOT=$MODULE_ROOT  LIBS_PREFIX=$LIBS_PREFIX  NP
 NGINX_SRC="$WORK/nginx-$NGINX_VER"
 if [ ! -f "$NGINX_SRC/configure" ]; then
   echo "==> 下载 nginx-$NGINX_VER tarball -> $NGINX_SRC"
-  NGINX_TARBALL="$(mktemp -t nginx-XXXXXX.tar.gz)"
+  NGINX_TARBALL="$(mktemp "${TMPDIR:-/tmp}/nginx-XXXXXX.tar.gz")"
   # 先下载到临时文件再解包: 避免网络抖动/代理拦截返回 HTML 错误页时,
   # curl 管道直接喂给 tar 导致 "tar: invalid magic / short read" 这类隐蔽失败。
   # 校验 gzip 魔数(1f 8b)并带重试, 失败时明确报错而非静默。
