@@ -336,7 +336,7 @@ jobs:
             - And more...
             
             ## Platforms
-            - CentOS 7 / glibc (amd64, arm64)
+            - Linux / glibc (amd64, arm64) — 在 CentOS 7 (glibc 2.17) 上构建, 除 glibc 外所有依赖 (OpenSSL/PCRE2/zlib/libxml2 等) 均静态链入, 因此可运行于任何 glibc 发行版 (RHEL/CentOS/Ubuntu/Debian 等及任意更新版本)
             - Alpine / musl (amd64, arm64)
             - macOS (amd64, arm64)
             - Windows (amd64) — no HTTP/3 (QUIC), no Lua
