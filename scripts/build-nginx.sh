@@ -134,18 +134,35 @@ fi
 
 # ---------- 补丁 (nginx_upstream_check_module 对 nginx 1.20.1+ 的 patch) ----------
 # 注意:
-#   1) patch 会给 nginx 核心 (src/http/ngx_http_upstream.c) 注入 upsync 依赖的
-#      ngx_http_upstream_check_add/delete_dynamic_peer 符号, 必须成功打上, 否则链接 upsync 报 undefined reference
-#   2) 幂等: 用 -R --dry-run 判断是否已应用; 已应用则跳过, 未应用才打 (不能用正向 dry-run 失败当"跳过",
-#      因为 patch 对 nginx 1.31.3 需要 --fuzz, 正向 dry-run 可能误报 Reversed)
+#   1) patch 会给 nginx 核心注入 upsync 依赖的
+#      ngx_http_upstream_check_add/delete_dynamic_peer 符号, 以及给
+#      ngx_http_upstream_rr_peer_s 增加 check_index 字段; 必须成功打上,
+#      否则 upsync 编译报 "no member named 'check_index'"。
+#   2) 幂等判据改为: 直接检查 patch 注入的标志 (header 里是否存在 check_index 字段),
+#      而不是用 "patch -R --dry-run" 探测 —— 因为 --fuzz=5 在 nginx 1.31.x 上对
+#      干净源码做 reverse dry-run 也会"成功"匹配, 导致误判为"已应用"而跳过 patch。
+RR_H="$SRC/src/http/ngx_http_upstream_round_robin.h"
 if [ -d "$MODULE_ROOT/nginx_upstream_check_module" ]; then
   PATCH_FILE="$MODULE_ROOT/nginx_upstream_check_module/check_1.20.1+.patch"
   if [ -f "$PATCH_FILE" ]; then
-    if patch -p1 -R --fuzz=5 --dry-run < "$PATCH_FILE" >/dev/null 2>&1; then
-      echo "==> nginx_upstream_check patch 已应用, 跳过"
+    if grep -q "check_index" "$RR_H" 2>/dev/null; then
+      echo "==> nginx_upstream_check patch 已应用 (header 含 check_index), 跳过"
     else
-      echo "==> 应用 nginx_upstream_check patch (fuzz)"
-      patch -p1 --fuzz=5 < "$PATCH_FILE"
+      echo "==> 应用 nginx_upstream_check patch"
+      # 优先按仓库 README 的干净打法 (patch -p1); 仅当冲突时回退到 --fuzz=5。
+      if patch -p1 < "$PATCH_FILE" 2>/dev/null; then
+        :
+      else
+        echo "    干净打失败, 回退 --fuzz=5"
+        patch -p1 --fuzz=5 < "$PATCH_FILE"
+      fi
+      # 校验: patch 必须成功注入 check_index, 否则 upsync 编译会报
+      # "no member named 'check_index'"。未注入则明确失败, 不再静默跳过。
+      if ! grep -q "check_index" "$RR_H" 2>/dev/null; then
+        echo "!! nginx_upstream_check patch 未能注入 check_index 字段, 中止" >&2
+        exit 1
+      fi
+      echo "==> check_index 注入成功"
     fi
   fi
 fi

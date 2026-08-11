@@ -3,5 +3,5 @@ test_nginx_final.sh
 work/
 # 构建日志包及其解压目录 (不纳入版本控制)
 logs_*.zip
-extracted_logs*/
+extracted_*/
 extracted_logs_*/
