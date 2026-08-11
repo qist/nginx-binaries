@@ -71,67 +71,37 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Ubuntu amd64
-          - os: ubuntu
+          # CentOS 7 (glibc) amd64 - 原生 x86 容器
+          - os: centos7
             arch: amd64
             runs-on: ubuntu-latest
-            suffix: ubuntu_amd64
-            use-docker: false
+            suffix: glibc_amd64
+            use-docker: true
+            docker-image: centos:7.9.2009
 
-          # Ubuntu arm64 (使用 QEMU)
-          - os: ubuntu
+          # CentOS 7 (glibc) arm64 - 原生 arm64 容器 (GitHub ARM runner, 无 QEMU/交叉编译)
+          - os: centos7
             arch: arm64
-            runs-on: ubuntu-latest
-            suffix: ubuntu_arm64
+            runs-on: ubuntu-24.04-arm
+            suffix: glibc_arm64
             use-docker: true
-            docker-image: ubuntu:22.04
+            docker-image: centos:7.9.2009
 
-          # Debian amd64
-          - os: debian
-            arch: amd64
-            runs-on: ubuntu-latest
-            use-docker: false
-            suffix: debian_amd64
-
-          # Debian arm64 (使用 QEMU)
-          - os: debian
-            arch: arm64
-            runs-on: ubuntu-latest
-            suffix: debian_arm64
-            use-docker: true
-            docker-image: debian:12
-
-          # Red Hat amd64
-          - os: redhat
-            arch: amd64
-            runs-on: ubuntu-latest
-            suffix: redhat_amd64
-            use-docker: true
-            docker-image: rockylinux:8
-
-          # Red Hat arm64 (使用 QEMU)
-          - os: redhat
-            arch: arm64
-            runs-on: ubuntu-latest
-            suffix: redhat_arm64
-            use-docker: true
-            docker-image: rockylinux:8
-
-          # Alpine amd64
+          # Alpine amd64 (musl)
           - os: alpine
             arch: amd64
             runs-on: ubuntu-latest
-            suffix: alpine_amd64
+            suffix: musl_amd64
             use-docker: true
-            docker-image: alpine:latest
+            docker-image: alpine:3.20
 
-          # Alpine arm64 (使用 QEMU)
+          # Alpine arm64 (musl)
           - os: alpine
             arch: arm64
-            runs-on: ubuntu-latest
-            suffix: alpine_arm64
+            runs-on: ubuntu-24.04-arm
+            suffix: musl_arm64
             use-docker: true
-            docker-image: alpine:latest
+            docker-image: alpine:3.20
 
           # macOS amd64 (Intel - 使用原生 intel 运行器)
           - os: macos
@@ -155,15 +125,52 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set QEMU for cross-compilation
-        if: matrix.arch == 'arm64' && matrix.use-docker
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: linux/arm64
-
       - name: Set Docker Buildx
         if: matrix.use-docker
         uses: docker/setup-buildx-action@v3
+
+      - name: Build with Docker (CentOS 7)
+        if: matrix.use-docker && matrix.os == 'centos7'
+        run: |
+          VERSION=${{ needs.check-version.outputs.new_version }}
+          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
+            bash -c "set -ex
+            # 安装官方 vault 归档源 + SCL(devtoolset-9)
+            # arm64 源在 altarch 路径下, x86_64 在常规路径; 用 ALT 变量区分
+            ALT=""
+            if [ "${{ matrix.arch }}" = "arm64" ]; then ALT="altarch"; fi
+            C7_BASE="https://vault.centos.org"
+            [ -n "\$ALT" ] && C7_BASE="https://vault.centos.org/\$ALT"
+            cat > /etc/yum.repos.d/CentOS-Base.repo <<EOF
+          [base]
+          name=CentOS-7.9.2009 - Base
+          baseurl=\${C7_BASE}/7.9.2009/os/\$basearch/
+          gpgcheck=0
+          enabled=1
+          [updates]
+          name=CentOS-7.9.2009 - Updates
+          baseurl=\${C7_BASE}/7.9.2009/updates/\$basearch/
+          gpgcheck=0
+          enabled=1
+          [extras]
+          name=CentOS-7.9.2009 - Extras
+          baseurl=\${C7_BASE}/7.9.2009/extras/\$basearch/
+          gpgcheck=0
+          enabled=1
+          [sclo-rh]
+          name=CentOS-7.9.2009 - SCLo-rh
+          baseurl=\${C7_BASE}/7.9.2009/sclo/\$basearch/rh/
+          gpgcheck=0
+          enabled=1
+          EOF
+          yum install -y gcc gcc-c++ make git patch perl perl-IPC-Cmd autoconf automake libtool \
+            devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils \
+            xz cmake3 pkgconfig curl
+          # 启用 devtoolset-9 (gcc 9) 并让 cmake 指向 cmake3
+          source /opt/rh/devtoolset-9/enable
+          ln -sf \$(command -v cmake3 || command -v cmake) /usr/local/bin/cmake
+          MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs \
+            bash /workspace/scripts/ci-build.sh /workspace $VERSION ${{ matrix.suffix }} tar.gz"
 
       - name: Build with Docker (Alpine)
         if: matrix.use-docker && matrix.os == 'alpine'
@@ -171,637 +178,16 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
             sh -c "set -ex && apk update && apk add build-base git patch perl autoconf automake libtool cmake pkgconfig linux-headers curl xz &&
-            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
-            git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
-            cd pcre2 && ./autogen.sh && cd ..
-            git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
-            cd zlib && ./configure --prefix=/workspace/libs --static && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
-            cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
-            curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
-            cd libxml2 && ./configure --prefix=/workspace/libs --libdir=/workspace/libs/lib --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
-            curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
-            export PATH=/workspace/libs/bin:\$PATH && export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib64/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:\$PKG_CONFIG_PATH && export LDFLAGS=\"-L/workspace/libs/lib -L/workspace/libs/lib64\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib:/workspace/libs/lib64 && cd libxslt && ./configure --prefix=/workspace/libs --libdir=/workspace/libs/lib --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
-            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
-            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
-            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
-            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
-            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
-            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
-            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
-            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
-            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
-            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
-            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
-            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
-            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
-            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
-            cd ngx_brotli/deps/brotli
-            mkdir -p out && cd out
-            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
-            cmake --build . --config Release --target brotlienc
-            make install
-            cd /workspace
-            cd nginx
-            export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib64/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:\$PKG_CONFIG_PATH
-            export CFLAGS=\"\$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\"
-            export LIBS=\"\$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
-            export LDFLAGS=\"-L/workspace/libs/lib \$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
-            export C_INCLUDE_PATH=/workspace/libs/include
-            export LIBRARY_PATH=/workspace/libs/lib:/workspace/libs/lib64
-            export PATH=/workspace/libs/bin:\$PATH
-            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
-            ./auto/configure \
-              --prefix= \
-              --conf-path=conf/nginx.conf \
-              --pid-path=logs/nginx.pid \
-              --http-log-path=logs/access.log \
-              --error-log-path=logs/error.log \
-              --sbin-path=nginx \
-              --http-client-body-temp-path=temp/client_body_temp \
-              --http-proxy-temp-path=temp/proxy_temp \
-              --http-fastcgi-temp-path=temp/fastcgi_temp \
-              --http-scgi-temp-path=temp/scgi_temp \
-              --http-uwsgi-temp-path=temp/uwsgi_temp \
-              --with-compat \
-              --with-pcre=/workspace/pcre2 \
-              --with-zlib=/workspace/zlib \
-              --with-pcre-jit \
-              --with-http_ssl_module \
-              --with-http_stub_status_module \
-              --with-http_realip_module \
-              --with-http_auth_request_module \
-              --with-http_addition_module \
-              --with-http_gzip_static_module \
-              --with-http_sub_module \
-              --with-http_v2_module \
-              --with-stream \
-              --with-debug \
-              --with-stream_ssl_module \
-              --with-stream_realip_module \
-              --with-stream_ssl_preread_module \
-              --with-threads \
-              --with-http_secure_link_module \
-              --with-http_gunzip_module \
-              --with-http_dav_module \
-              --with-http_flv_module \
-              --with-http_mp4_module \
-              --with-http_random_index_module \
-              --with-http_slice_module \
-              --with-mail \
-              --with-mail_ssl_module \
-              --with-file-aio \
-              --with-http_v3_module \
-              --with-http_xslt_module \
-              --with-openssl-opt=enable-tls1_3 \
-              --with-openssl=/workspace/quictls \
-              --add-module=/workspace/ngx_devel_kit \
-              --add-module=/workspace/set-misc-nginx-module \
-              --add-module=/workspace/ngx_http_substitutions_filter_module \
-              --add-module=/workspace/nginx-http-auth-digest \
-              --add-module=/workspace/nginx_upstream_check_module \
-              --add-module=/workspace/ngx_cache_purge \
-              --add-module=/workspace/nginx-upsync-module \
-              --add-module=/workspace/echo-nginx-module \
-              --add-module=/workspace/mod_zip \
-              --add-module=/workspace/nginx-upstream-dynamic-servers \
-              --add-module=/workspace/headers-more-nginx-module \
-              --add-module=/workspace/nginx-module-vts \
-              --add-module=/workspace/nginx-dav-ext-module \
-              --add-module=/workspace/ngx_brotli \
-              --add-module=/workspace/ngx-fancyindex \
-              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type \$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\" \
-              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now \$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\" \
-              --user=nginx \
-              --group=nginx
-            make -j\$(nproc)
-            mkdir -p /tmp/nginx
-            \cp objs/nginx /tmp/nginx/nginx
-            \cp -pdr conf /tmp/nginx/ 
-            \cp -pdr docs/html /tmp/nginx/ 
-            mkdir -p /tmp/nginx/logs
-            mkdir -p /tmp/nginx/temp/client_body_temp
-            mkdir -p /tmp/nginx/temp/proxy_temp
-            mkdir -p /tmp/nginx/temp/fastcgi_temp
-            mkdir -p /tmp/nginx/temp/scgi_temp
-            mkdir -p /tmp/nginx/temp/uwsgi_temp
-            ls /tmp/nginx/
-            cd /tmp
-            tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
-
-      - name: Build with Docker (Red Hat)
-        if: matrix.use-docker && matrix.os == 'redhat'
-        run: |
-          VERSION=${{ needs.check-version.outputs.new_version }}
-          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "set -ex && yum update -y && yum install -y gcc make git patch perl perl-IPC-Cmd cmake pkgconf-pkg-config autoconf curl xz automake libtool
-            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
-            git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
-            cd pcre2 && ./autogen.sh && cd ..
-            git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
-            cd zlib && ./configure --prefix=/workspace/libs --static && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
-            cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
-            curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
-            cd libxml2 && ./configure --prefix=/workspace/libs --libdir=/workspace/libs/lib --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
-            curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
-            export PATH=/workspace/libs/bin:\$PATH && export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib64/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:\$PKG_CONFIG_PATH && export LDFLAGS=\"-L/workspace/libs/lib -L/workspace/libs/lib64\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib:/workspace/libs/lib64 && cd libxslt && ./configure --prefix=/workspace/libs --libdir=/workspace/libs/lib --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
-            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
-            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
-            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
-            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
-            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
-            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
-            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
-            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
-            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
-            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
-            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
-            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
-            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
-            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
-            cd ngx_brotli/deps/brotli
-            mkdir -p out && cd out
-            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
-            cmake --build . --config Release --target brotlienc
-            make install
-            cd /workspace
-            cd nginx
-            export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib64/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:\$PKG_CONFIG_PATH
-            export CFLAGS=\"\$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\"
-            export LIBS=\"\$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
-            export LDFLAGS=\"-L/workspace/libs/lib \$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
-            export C_INCLUDE_PATH=/workspace/libs/include
-            export LIBRARY_PATH=/workspace/libs/lib:/workspace/libs/lib64
-            export PATH=/workspace/libs/bin:\$PATH
-            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
-            ./auto/configure \
-              --prefix= \
-              --conf-path=conf/nginx.conf \
-              --pid-path=logs/nginx.pid \
-              --http-log-path=logs/access.log \
-              --error-log-path=logs/error.log \
-              --sbin-path=nginx \
-              --http-client-body-temp-path=temp/client_body_temp \
-              --http-proxy-temp-path=temp/proxy_temp \
-              --http-fastcgi-temp-path=temp/fastcgi_temp \
-              --http-scgi-temp-path=temp/scgi_temp \
-              --http-uwsgi-temp-path=temp/uwsgi_temp \
-              --with-compat \
-              --with-pcre=/workspace/pcre2 \
-              --with-zlib=/workspace/zlib \
-              --with-pcre-jit \
-              --with-http_ssl_module \
-              --with-http_stub_status_module \
-              --with-http_realip_module \
-              --with-http_auth_request_module \
-              --with-http_addition_module \
-              --with-http_gzip_static_module \
-              --with-http_sub_module \
-              --with-http_v2_module \
-              --with-stream \
-              --with-debug \
-              --with-stream_ssl_module \
-              --with-stream_realip_module \
-              --with-stream_ssl_preread_module \
-              --with-threads \
-              --with-http_secure_link_module \
-              --with-http_gunzip_module \
-              --with-http_dav_module \
-              --with-http_flv_module \
-              --with-http_mp4_module \
-              --with-http_random_index_module \
-              --with-http_slice_module \
-              --with-mail \
-              --with-mail_ssl_module \
-              --with-file-aio \
-              --with-http_v3_module \
-              --with-http_xslt_module \
-              --with-openssl-opt=enable-tls1_3 \
-              --with-openssl=/workspace/quictls \
-              --add-module=/workspace/ngx_devel_kit \
-              --add-module=/workspace/set-misc-nginx-module \
-              --add-module=/workspace/ngx_http_substitutions_filter_module \
-              --add-module=/workspace/nginx-http-auth-digest \
-              --add-module=/workspace/nginx_upstream_check_module \
-              --add-module=/workspace/ngx_cache_purge \
-              --add-module=/workspace/nginx-upsync-module \
-              --add-module=/workspace/echo-nginx-module \
-              --add-module=/workspace/mod_zip \
-              --add-module=/workspace/nginx-upstream-dynamic-servers \
-              --add-module=/workspace/headers-more-nginx-module \
-              --add-module=/workspace/nginx-module-vts \
-              --add-module=/workspace/nginx-dav-ext-module \
-              --add-module=/workspace/ngx_brotli \
-              --add-module=/workspace/ngx-fancyindex \
-              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type \$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\" \
-              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now \$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\" \
-              --user=nginx \
-              --group=nginx
-            make -j\$(nproc)
-            mkdir -p /tmp/nginx
-            \cp objs/nginx /tmp/nginx/nginx
-            \cp -pdr conf /tmp/nginx/ 
-            \cp -pdr docs/html /tmp/nginx/ 
-            mkdir -p /tmp/nginx/logs
-            mkdir -p /tmp/nginx/temp/client_body_temp
-            mkdir -p /tmp/nginx/temp/proxy_temp
-            mkdir -p /tmp/nginx/temp/fastcgi_temp
-            mkdir -p /tmp/nginx/temp/scgi_temp
-            mkdir -p /tmp/nginx/temp/uwsgi_temp
-            ls /tmp/nginx/
-            cd /tmp
-            tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
-
-      - name: Build directly (Ubuntu/Debian)
-        if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && !matrix.use-docker
-        run: |
-          VERSION=${{ needs.check-version.outputs.new_version }}
-          sudo apt-get update
-          sudo apt-get install -y build-essential git patch cmake curl xz-utils pkg-config autoconf automake libtool
-          
-          git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
-          git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
-          cd pcre2 && ./autogen.sh && cd ..
-          git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
-          cd zlib && ./configure --prefix=$GITHUB_WORKSPACE/libs --static && make -j$(nproc) install && cd ..
-          git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
-          cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
-          curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
-          cd libxml2 && ./configure --prefix=$GITHUB_WORKSPACE/libs --libdir=$GITHUB_WORKSPACE/libs/lib --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
-          curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
-          export PATH=$GITHUB_WORKSPACE/libs/bin:$PATH && export PKG_CONFIG_PATH=$GITHUB_WORKSPACE/libs/lib/pkgconfig:$GITHUB_WORKSPACE/libs/lib64/pkgconfig:$GITHUB_WORKSPACE/libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH && export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib -L$GITHUB_WORKSPACE/libs/lib64" && export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include && export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib:$GITHUB_WORKSPACE/libs/lib64 && cd libxslt && ./configure --prefix=$GITHUB_WORKSPACE/libs --libdir=$GITHUB_WORKSPACE/libs/lib --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
-          git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
-          git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
-          git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
-          git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
-          git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
-          git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
-          git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
-          git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
-          git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
-          git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
-          git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
-          git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
-          cd ngx_brotli/deps/brotli
-          mkdir -p out && cd out
-          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
-          cmake --build . --config Release --target brotlienc
-          make install
-          cd ../../../..
-          git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
-          
-          cd nginx
-          export PKG_CONFIG_PATH=$GITHUB_WORKSPACE/libs/lib/pkgconfig:$GITHUB_WORKSPACE/libs/lib64/pkgconfig:$GITHUB_WORKSPACE/libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-          export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
-          export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
-          export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include
-          export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib:$GITHUB_WORKSPACE/libs/lib64
-          export PATH=$GITHUB_WORKSPACE/libs/bin:$PATH
-          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
-          ./auto/configure \
-            --prefix= \
-            --conf-path=conf/nginx.conf \
-            --pid-path=logs/nginx.pid \
-            --http-log-path=logs/access.log \
-            --error-log-path=logs/error.log \
-            --sbin-path=nginx \
-            --http-client-body-temp-path=temp/client_body_temp \
-            --http-proxy-temp-path=temp/proxy_temp \
-            --http-fastcgi-temp-path=temp/fastcgi_temp \
-            --http-scgi-temp-path=temp/scgi_temp \
-            --http-uwsgi-temp-path=temp/uwsgi_temp \
-            --with-compat \
-            --with-pcre=../pcre2 \
-            --with-zlib=$GITHUB_WORKSPACE/zlib \
-            --with-pcre-jit \
-            --with-http_ssl_module \
-            --with-http_stub_status_module \
-            --with-http_realip_module \
-            --with-http_auth_request_module \
-            --with-http_addition_module \
-            --with-http_gzip_static_module \
-            --with-http_sub_module \
-            --with-http_v2_module \
-            --with-stream \
-            --with-debug \
-            --with-stream_ssl_module \
-            --with-stream_realip_module \
-            --with-stream_ssl_preread_module \
-            --with-threads \
-            --with-http_secure_link_module \
-            --with-http_gunzip_module \
-            --with-http_dav_module \
-            --with-http_flv_module \
-            --with-http_mp4_module \
-            --with-http_random_index_module \
-            --with-http_slice_module \
-            --with-mail \
-            --with-mail_ssl_module \
-            --with-file-aio \
-            --with-http_v3_module \
-            --with-http_xslt_module \
-            --with-openssl-opt=enable-tls1_3 \
-            --with-openssl=../quictls \
-            --add-module=../ngx_devel_kit \
-            --add-module=../set-misc-nginx-module \
-            --add-module=../ngx_http_substitutions_filter_module \
-            --add-module=../nginx-http-auth-digest \
-            --add-module=../nginx_upstream_check_module \
-            --add-module=../ngx_cache_purge \
-            --add-module=../nginx-upsync-module \
-            --add-module=../echo-nginx-module \
-            --add-module=../mod_zip \
-            --add-module=../nginx-upstream-dynamic-servers \
-            --add-module=../headers-more-nginx-module \
-            --add-module=../nginx-module-vts \
-            --add-module=../nginx-dav-ext-module \
-            --add-module=../ngx_brotli \
-            --add-module=../ngx-fancyindex \
-            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type $(pkg-config --cflags --static libxml-2.0 libxslt libexslt)" \
-            --with-ld-opt="-Wl,-z,relro -Wl,-z,now $(pkg-config --libs --static libxml-2.0 libxslt libexslt)" \
-            --user=nginx \
-            --group=nginx
-            make -j$(nproc)
-            mkdir -p /tmp/nginx
-            \cp objs/nginx /tmp/nginx/nginx
-            \cp -pdr conf /tmp/nginx/ 
-            \cp -pdr docs/html /tmp/nginx/ 
-            mkdir -p /tmp/nginx/logs 
-            mkdir -p /tmp/nginx/temp/client_body_temp
-            mkdir -p /tmp/nginx/temp/proxy_temp 
-            mkdir -p /tmp/nginx/temp/fastcgi_temp 
-            mkdir -p /tmp/nginx/temp/scgi_temp 
-            mkdir -p /tmp/nginx/temp/uwsgi_temp 
-            ls /tmp/nginx/ 
-            cd /tmp 
-          tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/
-          cp nginx_${VERSION}_${{ matrix.suffix }}.tar.gz $GITHUB_WORKSPACE
-
-      - name: Build with Docker (Ubuntu/Debian arm64)
-        if: (matrix.os == 'ubuntu' || matrix.os == 'debian') && matrix.use-docker
-        run: |
-          VERSION=${{ needs.check-version.outputs.new_version }}
-          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
-            bash -c "set -ex && apt-get update && apt-get install -y build-essential git patch cmake pkg-config autoconf curl xz-utils automake libtool
-            git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
-            git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
-            cd pcre2 && ./autogen.sh && cd ..
-            git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
-            cd zlib && ./configure --prefix=/workspace/libs --static && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
-            cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/workspace/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd /workspace
-            curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
-            cd libxml2 && ./configure --prefix=/workspace/libs --libdir=/workspace/libs/lib --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=/workspace/libs && make -j$(nproc) install && cd /workspace
-            curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
-            export PATH=/workspace/libs/bin:\$PATH && export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib64/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:\$PKG_CONFIG_PATH && export LDFLAGS=\"-L/workspace/libs/lib -L/workspace/libs/lib64\" && export C_INCLUDE_PATH=/workspace/libs/include && export LIBRARY_PATH=/workspace/libs/lib:/workspace/libs/lib64 && cd libxslt && ./configure --prefix=/workspace/libs --libdir=/workspace/libs/lib --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd /workspace
-            git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
-            git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
-            git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
-            git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
-            git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
-            git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
-            git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
-            git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
-            git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
-            git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
-            git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
-            git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
-            git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
-            git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
-            git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
-            cd ngx_brotli/deps/brotli
-            mkdir -p out && cd out
-            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
-            cmake --build . --config Release --target brotlienc
-            make install
-            cd /workspace
-            cd nginx
-            export PKG_CONFIG_PATH=/workspace/libs/lib/pkgconfig:/workspace/libs/lib64/pkgconfig:/workspace/libs/lib/x86_64-linux-gnu/pkgconfig:/workspace/libs/lib/aarch64-linux-gnu/pkgconfig:\$PKG_CONFIG_PATH
-            export CFLAGS=\"\$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\"
-            export LIBS=\"\$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
-            export LDFLAGS=\"-L/workspace/libs/lib \$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\"
-            export C_INCLUDE_PATH=/workspace/libs/include
-            export LIBRARY_PATH=/workspace/libs/lib:/workspace/libs/lib64
-            export PATH=/workspace/libs/bin:\$PATH
-            patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
-            ./auto/configure \
-              --prefix= \
-              --conf-path=conf/nginx.conf \
-              --pid-path=logs/nginx.pid \
-              --http-log-path=logs/access.log \
-              --error-log-path=logs/error.log \
-              --sbin-path=nginx \
-              --http-client-body-temp-path=temp/client_body_temp \
-              --http-proxy-temp-path=temp/proxy_temp \
-              --http-fastcgi-temp-path=temp/fastcgi_temp \
-              --http-scgi-temp-path=temp/scgi_temp \
-              --http-uwsgi-temp-path=temp/uwsgi_temp \
-              --with-compat \
-              --with-pcre=/workspace/pcre2 \
-              --with-zlib=/workspace/zlib \
-              --with-pcre-jit \
-              --with-http_ssl_module \
-              --with-http_stub_status_module \
-              --with-http_realip_module \
-              --with-http_auth_request_module \
-              --with-http_addition_module \
-              --with-http_gzip_static_module \
-              --with-http_sub_module \
-              --with-http_v2_module \
-              --with-stream \
-              --with-debug \
-              --with-stream_ssl_module \
-              --with-stream_realip_module \
-              --with-stream_ssl_preread_module \
-              --with-threads \
-              --with-http_secure_link_module \
-              --with-http_gunzip_module \
-              --with-http_dav_module \
-              --with-http_flv_module \
-              --with-http_mp4_module \
-              --with-http_random_index_module \
-              --with-http_slice_module \
-              --with-mail \
-              --with-mail_ssl_module \
-              --with-file-aio \
-              --with-http_v3_module \
-              --with-http_xslt_module \
-              --with-openssl-opt=enable-tls1_3 \
-              --with-openssl=/workspace/quictls \
-              --add-module=/workspace/ngx_devel_kit \
-              --add-module=/workspace/set-misc-nginx-module \
-              --add-module=/workspace/ngx_http_substitutions_filter_module \
-              --add-module=/workspace/nginx-http-auth-digest \
-              --add-module=/workspace/nginx_upstream_check_module \
-              --add-module=/workspace/ngx_cache_purge \
-              --add-module=/workspace/nginx-upsync-module \
-              --add-module=/workspace/echo-nginx-module \
-              --add-module=/workspace/mod_zip \
-              --add-module=/workspace/nginx-upstream-dynamic-servers \
-              --add-module=/workspace/headers-more-nginx-module \
-              --add-module=/workspace/nginx-module-vts \
-              --add-module=/workspace/nginx-dav-ext-module \
-              --add-module=/workspace/ngx_brotli \
-              --add-module=/workspace/ngx-fancyindex \
-              --with-cc-opt=\"-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type \$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)\" \
-              --with-ld-opt=\"-Wl,-z,relro -Wl,-z,now \$(pkg-config --libs --static libxml-2.0 libxslt libexslt)\" \
-              --user=nginx \
-              --group=nginx
-            make -j\$(nproc)
-            mkdir -p /tmp/nginx
-            \cp objs/nginx /tmp/nginx/nginx
-            \cp -pdr conf /tmp/nginx/
-            \cp -pdr docs/html /tmp/nginx/
-            mkdir -p /tmp/nginx/logs
-            mkdir -p /tmp/nginx/temp/client_body_temp
-            mkdir -p /tmp/nginx/temp/proxy_temp
-            mkdir -p /tmp/nginx/temp/fastcgi_temp
-            mkdir -p /tmp/nginx/temp/scgi_temp
-            mkdir -p /tmp/nginx/temp/uwsgi_temp
-            ls /tmp/nginx/
-            cd /tmp
-          tar czf /workspace/nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/"
+            MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs bash /workspace/scripts/ci-build.sh /workspace $VERSION ${{ matrix.suffix }} tar.gz"
 
       - name: Build macOS
         if: matrix.os == 'macos'
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           brew install pcre zlib cmake pkg-config autoconf automake libtool
-          PCRE_PREFIX=$(brew --prefix pcre)
-          ZLIB_PREFIX=$(brew --prefix zlib)
-          git clone --depth=1 --recursive -b openssl-3.3.0 https://github.com/quictls/quictls.git
-          git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
-          cd pcre2 && ./autogen.sh && cd ..
-          git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
-          cd zlib && ./configure --prefix=$GITHUB_WORKSPACE/libs --static && make -j$(nproc) install && cd ..
-          git clone --depth=1 --recursive https://github.com/tukaani-project/xz.git
-          cd xz && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libs -DCMAKE_POSITION_INDEPENDENT_CODE=ON && make -j$(nproc) install && cd ../..
-          curl -sL https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.9.tar.xz | tar xJ && mv libxml2-2.12.9 libxml2
-          cd libxml2 && ./configure --prefix=$GITHUB_WORKSPACE/libs --libdir=$GITHUB_WORKSPACE/libs/lib --enable-static --disable-shared --with-pic --without-python --without-icu --without-lzma --with-zlib=$GITHUB_WORKSPACE/libs && make -j$(nproc) install && cd ..
-          curl -sL https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.39.tar.xz | tar xJ && mv libxslt-1.1.39 libxslt
-          export PATH=$GITHUB_WORKSPACE/libs/bin:$PATH && export PKG_CONFIG_PATH=$GITHUB_WORKSPACE/libs/lib/pkgconfig:$GITHUB_WORKSPACE/libs/lib64/pkgconfig:$GITHUB_WORKSPACE/libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH && export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib -L$GITHUB_WORKSPACE/libs/lib64" && export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include && export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib:$GITHUB_WORKSPACE/libs/lib64 && cd libxslt && ./configure --prefix=$GITHUB_WORKSPACE/libs --libdir=$GITHUB_WORKSPACE/libs/lib --enable-static --disable-shared --with-pic --without-python --without-crypto && make -j$(nproc) install && cd ..
-          git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
-          git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
-          git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
-          git clone --depth=1 --recursive https://github.com/atomx/nginx-http-auth-digest.git
-          git clone --depth=1 --recursive https://github.com/xiaokai-wang/nginx_upstream_check_module.git
-          git clone --depth=1 --recursive https://github.com/FRiCKLE/ngx_cache_purge.git
-          git clone --depth=1 --recursive https://github.com/weibocom/nginx-upsync-module.git
-          git clone --depth=1 --recursive https://github.com/openresty/echo-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/evanmiller/mod_zip.git
-          git clone --depth=1 --recursive https://github.com/GUI/nginx-upstream-dynamic-servers.git
-          git clone --depth=1 --recursive https://github.com/openresty/headers-more-nginx-module.git
-          git clone --depth=1 --recursive https://github.com/vozlt/nginx-module-vts.git
-          git clone --depth=1 --recursive https://github.com/arut/nginx-dav-ext-module.git
-            git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
-            cd ngx_brotli/deps/brotli
-            mkdir -p out && cd out
-            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=./installed ..
-            cmake --build . --config Release --target brotlienc
-            make install
-            cd ../../../..
-          git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
-          
-          cd nginx
-          export PKG_CONFIG_PATH=$GITHUB_WORKSPACE/libs/lib/pkgconfig:$GITHUB_WORKSPACE/libs/lib64/pkgconfig:$GITHUB_WORKSPACE/libs/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH
-          export CFLAGS="$(pkg-config --cflags --static libxml-2.0 libxslt libexslt)"
-          export LIBS="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
-          export LDFLAGS="-L$GITHUB_WORKSPACE/libs/lib $(pkg-config --libs --static libxml-2.0 libxslt libexslt)"
-          export C_INCLUDE_PATH=$GITHUB_WORKSPACE/libs/include
-          export LIBRARY_PATH=$GITHUB_WORKSPACE/libs/lib:$GITHUB_WORKSPACE/libs/lib64
-          export PATH=$GITHUB_WORKSPACE/libs/bin:$PATH
-          patch -p1 < ../nginx_upstream_check_module/check_1.20.1+.patch
-          ./auto/configure \
-            --prefix= \
-            --conf-path=conf/nginx.conf \
-            --pid-path=logs/nginx.pid \
-            --http-log-path=logs/access.log \
-            --error-log-path=logs/error.log \
-            --sbin-path=nginx \
-            --http-client-body-temp-path=temp/client_body_temp \
-            --http-proxy-temp-path=temp/proxy_temp \
-            --http-fastcgi-temp-path=temp/fastcgi_temp \
-            --http-scgi-temp-path=temp/scgi_temp \
-            --http-uwsgi-temp-path=temp/uwsgi_temp \
-            --with-compat \
-            --with-pcre=../pcre2 \
-            --with-zlib=$GITHUB_WORKSPACE/zlib \
-            --with-pcre-jit \
-            --with-http_ssl_module \
-            --with-http_stub_status_module \
-            --with-http_realip_module \
-            --with-http_auth_request_module \
-            --with-http_addition_module \
-            --with-http_gzip_static_module \
-            --with-http_sub_module \
-            --with-http_v2_module \
-            --with-stream \
-            --with-debug \
-            --with-stream_ssl_module \
-            --with-stream_realip_module \
-            --with-stream_ssl_preread_module \
-            --with-threads \
-            --with-http_secure_link_module \
-            --with-http_gunzip_module \
-            --with-http_dav_module \
-            --with-http_flv_module \
-            --with-http_mp4_module \
-            --with-http_random_index_module \
-            --with-http_slice_module \
-            --with-mail \
-            --with-mail_ssl_module \
-            --with-http_v3_module \
-            --with-http_xslt_module \
-            --with-openssl-opt=enable-tls1_3 \
-            --with-openssl=../quictls \
-            --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-deprecated-declarations -fno-strict-aliasing -D_FORTIFY_SOURCE=2 --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -fPIC -Wno-cast-function-type -Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types $(pkg-config --cflags --static libxml-2.0 libxslt libexslt)" \
-            --with-ld-opt="$(pkg-config --libs --static libxml-2.0 libxslt libexslt)" \
-            --add-module=../ngx_devel_kit \
-            --add-module=../set-misc-nginx-module \
-            --add-module=../ngx_http_substitutions_filter_module \
-            --add-module=../nginx-http-auth-digest \
-            --add-module=../nginx_upstream_check_module \
-            --add-module=../ngx_cache_purge \
-            --add-module=../nginx-upsync-module \
-            --add-module=../echo-nginx-module \
-            --add-module=../mod_zip \
-            --add-module=../nginx-upstream-dynamic-servers \
-            --add-module=../headers-more-nginx-module \
-            --add-module=../nginx-module-vts \
-            --add-module=../nginx-dav-ext-module \
-            --add-module=../ngx_brotli \
-            --add-module=../ngx-fancyindex \
-            --user=nginx \
-            --group=nginx
-          make -j$(sysctl -n hw.ncpu)
-          # make install
-           mkdir -p /tmp/nginx
-          if [ -f objs/nginx ]; then
-            cp objs/nginx /tmp/nginx/nginx
-          fi
-           cp -R conf /tmp/nginx/
-           cp -R docs/html /tmp/nginx/
-          mkdir -p /tmp/nginx/logs
-          mkdir -p /tmp/nginx/temp/client_body_temp
-          mkdir -p /tmp/nginx/temp/proxy_temp
-          mkdir -p /tmp/nginx/temp/fastcgi_temp
-          mkdir -p /tmp/nginx/temp/scgi_temp
-          mkdir -p /tmp/nginx/temp/uwsgi_temp
-          ls /tmp/nginx/
-          cd /tmp
-          tar czf nginx_${VERSION}_${{ matrix.suffix }}.tar.gz nginx/
-          cp nginx_${VERSION}_${{ matrix.suffix }}.tar.gz $GITHUB_WORKSPACE
+          cd $GITHUB_WORKSPACE
+          MODULE_ROOT=$GITHUB_WORKSPACE LIBS_PREFIX=$GITHUB_WORKSPACE/libs \
+            bash scripts/ci-build.sh $GITHUB_WORKSPACE $VERSION ${{ matrix.suffix }} tar.gz
 
       - name: Setup MSYS2 UCRT64
         if: matrix.os == 'windows'
@@ -830,7 +216,7 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           # 创建 mingw32-make 的别名 make
           ln -sf /ucrt64/bin/mingw32-make.exe /ucrt64/bin/make.exe
-          git clone --depth=1 --recursive -b openssl-3.6.2 https://github.com/openssl/openssl.git
+          git clone --depth=1 --recursive -b openssl-3.6.3 https://github.com/openssl/openssl.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
 
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
@@ -940,18 +326,17 @@ jobs:
             Auto-built nginx ${{ needs.check-version.outputs.new_version }} binaries for multiple platforms.
             
             ## Included Modules
-            - HTTP/3 (QUIC) support via QuicTLS
+            - HTTP/3 (QUIC) support via OpenSSL 3.6.3 + nginx native HTTP/3 module (Windows excluded)
+            - Lua scripting (LuaJIT + lua-nginx-module + resty-* ecosystem + cjson/dkjson + qist/waf) (Windows excluded)
             - Headers more
             - VTS (Virtual host traffic status)
             - And more...
             
             ## Platforms
-            - Ubuntu (amd64, arm64)
-            - Debian (amd64, arm64)
-            - Red Hat / CentOS / Rocky Linux / AlmaLinux /Oracle (amd64, arm64)
-            - Alpine (amd64, arm64)
+            - CentOS 7 / glibc (amd64, arm64)
+            - Alpine / musl (amd64, arm64)
             - macOS (amd64, arm64)
-            - Windows (amd64)
+            - Windows (amd64) — no HTTP/3 (QUIC), no Lua
           files: artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
