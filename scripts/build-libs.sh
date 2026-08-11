@@ -119,9 +119,19 @@ build_luajit() {
   rm -rf "$WORK/luajit-src"
   git clone --depth=1 "$LUAJIT_REPO" "$WORK/luajit-src"
   cd "$WORK/luajit-src"
-  run make BUILDMODE=static XCFLAGS="-DLUAJIT_ENABLE_FFI" > /tmp/lj_make.log 2>&1
+  # macOS: luajit2 在较新 Xcode/SDK 下编译/链接需显式部署目标, 否则默认 15.0
+  # 触发 syscall 兼容问题导致 make 立即失败; 旧目标 + amalg 是稳定静态编译做法。
+  if [ "$(uname -s)" = "Darwin" ]; then
+    export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-11.0}"
+    LJ_TARGET_SYS="Darwin"
+  else
+    LJ_TARGET_SYS="Linux"
+  fi
+  run make BUILDMODE=static amalg \
+    TARGET_SYS="$LJ_TARGET_SYS" \
+    XCFLAGS="-DLUAJIT_ENABLE_FFI"
   rm -rf "$LUAJIT_DIR" && mkdir -p "$LUAJIT_DIR"
-  run make DESTDIR="$LUAJIT_DIR" install > /tmp/lj_install.log 2>&1
+  run make DESTDIR="$LUAJIT_DIR" install
   echo "    LuaJIT 静态库: $(ls "$LUAJIT_DIR/usr/local/lib/libluajit-5.1.a")"
 }
 
@@ -144,11 +154,9 @@ build_mimalloc() {
     -DMI_OVERRIDE=ON \
     -DMI_BUILD_TESTS=OFF \
     -DMI_INSTALL_LIBDIR=lib \
-    -DCMAKE_INSTALL_PREFIX="$WORK/mimalloc" > /tmp/mi_conf.log 2>&1
-  cmake --build build --target mimalloc-static -j"$NPROC" > /tmp/mi_build.log 2>&1 || {
-    echo "    [!] mimalloc build 失败, 输出如下:"; tail -40 /tmp/mi_build.log; exit 1; }
-  cmake --install build > /tmp/mi_install.log 2>&1 || {
-    echo "    [!] mimalloc install 失败, 输出如下:"; tail -40 /tmp/mi_install.log; exit 1; }
+    -DCMAKE_INSTALL_PREFIX="$WORK/mimalloc"
+  cmake --build build --target mimalloc-static -j"$NPROC"
+  cmake --install build
   MIMALLOC_A="$(ls "$WORK"/mimalloc/lib*/libmimalloc.a 2>/dev/null | head -1)"
   echo "    mimalloc 静态库: $MIMALLOC_A"
 }

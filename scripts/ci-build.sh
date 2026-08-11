@@ -27,6 +27,13 @@ export WORK="${WORK:-$ROOT/work}"
 # 版本号贯穿: $2(VER) 同时作为 nginx 源码版本 (ci-setup-deps.sh / build-nginx.sh 用 $NGINX_VER)
 export NGINX_VER="${NGINX_VER:-$VER}"
 
+# macOS: 较新 Xcode/SDK 默认部署目标为 15.0, 会让 luajit2/OpenSSL/nginx 在编译或链接阶段
+# 因 syscall 兼容问题失败; 显式降到 11.0 以兼容更多 macOS 运行环境, 且让 LLVM 工具链稳定。
+if [ "$(uname -s)" = "Darwin" ]; then
+  export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-11.0}"
+  echo "==> [ci-build] macOS 部署目标: $MACOSX_DEPLOYMENT_TARGET"
+fi
+
 bash "$SCRIPT_DIR/ci-setup-deps.sh"
 bash "$SCRIPT_DIR/ci-prepare.sh"
 bash "$SCRIPT_DIR/build-nginx.sh"

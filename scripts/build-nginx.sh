@@ -111,9 +111,19 @@ CC_OPT="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-de
 # 修复: 这里用「绝对路径 .a」显式静态链入 xml2/xslt/exslt/z, 并加 --as-needed,
 #   使 CORE_LIBS 里重复出现的 -lxml2 因符号已满足且 as-needed 而不再写入系统动态依赖.
 XML_LIB_DIR="$LIBS_PREFIX/lib"
-LD_OPT="$LD_OPT -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-Bstatic"
-LD_OPT="$LD_OPT $XML_LIB_DIR/libexslt.a $XML_LIB_DIR/libxslt.a $XML_LIB_DIR/libxml2.a $XML_LIB_DIR/libz.a"
-LD_OPT="$LD_OPT -Wl,-Bdynamic -lm"
+if [ "$PLATFORM" = "macos" ]; then
+  # macOS 用 ld64: 不认识 --as-needed / -z relro / -Bstatic 等 GNU ld 选项,
+  # 改用 -force_load 显式静态链入 xml2/xslt/exslt/z (已在上方 LD_OPT 含 luajit/mimalloc force_load)
+  LD_OPT="$LD_OPT -Wl,-force_load,$XML_LIB_DIR/libexslt.a"
+  LD_OPT="$LD_OPT -Wl,-force_load,$XML_LIB_DIR/libxslt.a"
+  LD_OPT="$LD_OPT -Wl,-force_load,$XML_LIB_DIR/libxml2.a"
+  LD_OPT="$LD_OPT -Wl,-force_load,$XML_LIB_DIR/libz.a"
+else
+  # Linux: 用 -Bstatic 包裹静态库, -Bdynamic 收尾 (避免命中系统 .so)
+  LD_OPT="$LD_OPT -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-Bstatic"
+  LD_OPT="$LD_OPT $XML_LIB_DIR/libexslt.a $XML_LIB_DIR/libxslt.a $XML_LIB_DIR/libxml2.a $XML_LIB_DIR/libz.a"
+  LD_OPT="$LD_OPT -Wl,-Bdynamic -lm"
+fi
 
 # ---------- 补丁 (nginx_upstream_check_module 对 nginx 1.20.1+ 的 patch) ----------
 # 注意:
