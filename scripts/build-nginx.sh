@@ -151,6 +151,13 @@ if [ -d "$MODULE_ROOT/nginx_upstream_check_module" ]; then
 fi
 
 # ---------- configure (整合 yml 全部模块, 只增不删) ----------
+# file AIO 仅在 Linux/FreeBSD 可用; macOS 无 AIO 支持, configure 会直接报
+# "no supported file AIO was found" 并退出, 故 macOS 不传 --with-file-aio。
+if [ "$PLATFORM" = "macos" ]; then
+  FILE_AIO_OPT=""
+else
+  FILE_AIO_OPT="--with-file-aio"
+fi
 echo "==> configure nginx ($PLATFORM)"
 ./configure \
   --prefix= \
@@ -193,7 +200,7 @@ echo "==> configure nginx ($PLATFORM)"
   --with-http_slice_module \
   --with-mail \
   --with-mail_ssl_module \
-  --with-file-aio \
+  $FILE_AIO_OPT \
   --with-http_v3_module \
   --with-http_xslt_module \
   --with-openssl-opt=enable-tls1_3 \

@@ -62,7 +62,30 @@ echo "==> [ci-setup-deps] MODULE_ROOT=$MODULE_ROOT  LIBS_PREFIX=$LIBS_PREFIX  NP
 NGINX_SRC="$WORK/nginx-$NGINX_VER"
 if [ ! -f "$NGINX_SRC/configure" ]; then
   echo "==> 下载 nginx-$NGINX_VER tarball -> $NGINX_SRC"
-  curl -sL "https://nginx.org/download/nginx-$NGINX_VER.tar.gz" | tar xz -C "$WORK"
+  NGINX_TARBALL="$(mktemp -t nginx-XXXXXX.tar.gz)"
+  # 先下载到临时文件再解包: 避免网络抖动/代理拦截返回 HTML 错误页时,
+  # curl 管道直接喂给 tar 导致 "tar: invalid magic / short read" 这类隐蔽失败。
+  # 校验 gzip 魔数(1f 8b)并带重试, 失败时明确报错而非静默。
+  download_ok=0
+  for attempt in 1 2 3; do
+    echo "    (尝试 $attempt/3) 下载 https://nginx.org/download/nginx-$NGINX_VER.tar.gz"
+    if curl -fsSL "https://nginx.org/download/nginx-$NGINX_VER.tar.gz" -o "$NGINX_TARBALL" \
+       && [ -s "$NGINX_TARBALL" ] \
+       && head -c2 "$NGINX_TARBALL" | od -An -tx1 | tr -d ' \n' | grep -q '^1f8b'; then
+      echo "    下载成功且为有效 gzip 包"
+      download_ok=1
+      break
+    fi
+    echo "    下载校验失败, 1 秒后重试"
+    sleep 1
+  done
+  if [ "$download_ok" -ne 1 ]; then
+    echo "!! 下载 nginx-$NGINX_VER tarball 失败 (非 gzip 内容或网络错误)" >&2
+    rm -f "$NGINX_TARBALL"
+    exit 1
+  fi
+  tar xzf "$NGINX_TARBALL" -C "$WORK"
+  rm -f "$NGINX_TARBALL"
 fi
 # 清掉可能残留的 $MODULE_ROOT/nginx (git 仓库, 缺 configure, 会误导 build-nginx.sh)
 if [ -d "$MODULE_ROOT/nginx" ] && [ "$MODULE_ROOT/nginx" != "$NGINX_SRC" ]; then

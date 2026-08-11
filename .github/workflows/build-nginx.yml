@@ -159,7 +159,7 @@ jobs:
           gpgcheck=0
           enabled=1
           EOF
-          yum install -y gcc gcc-c++ make git patch perl perl-IPC-Cmd autoconf automake libtool \
+          yum install -y gcc gcc-c++ make git patch perl perl-IPC-Cmd perl-Time-Piece autoconf automake libtool \
             devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils \
             xz pkgconfig curl file
           # 启用 devtoolset-9 (gcc 9)

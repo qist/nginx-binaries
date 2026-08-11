@@ -1,5 +1,7 @@
 nginx安装.txt
 test_nginx_final.sh
 work/
-logs_85348003431.zip
-extracted_logs
+# 构建日志包及其解压目录 (不纳入版本控制)
+logs_*.zip
+extracted_logs*/
+extracted_logs_*/
