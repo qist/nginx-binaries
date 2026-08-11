@@ -136,27 +136,26 @@ jobs:
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
             bash -c "set -ex
             # 安装官方 vault 归档源 + SCL(devtoolset-9)
-            # arm64 源在 altarch 路径下, x86_64 在常规路径; 用 ALT 变量区分
-            if [ "${{ matrix.arch }}" = "arm64" ]; then C7_ALT="/altarch"; C7_ARCH="aarch64"; else C7_ALT=""; C7_ARCH="x86_64"; fi
+            # arm64 源在 altarch 路径下, x86_64 在常规路径 (Actions 表达式直接拼 URL, 避免变量被外层 shell 展开)
             cat > /etc/yum.repos.d/CentOS-Base.repo <<EOF
           [base]
           name=CentOS-7.9.2009 - Base
-          baseurl=https://vault.centos.org\${C7_ALT}/7.9.2009/os/\${C7_ARCH}/
+          baseurl=https://vault.centos.org${{ matrix.arch == 'arm64' && '/altarch' || '' }}/7.9.2009/os/${{ matrix.arch == 'arm64' && 'aarch64' || 'x86_64' }}/
           gpgcheck=0
           enabled=1
           [updates]
           name=CentOS-7.9.2009 - Updates
-          baseurl=https://vault.centos.org\${C7_ALT}/7.9.2009/updates/\${C7_ARCH}/
+          baseurl=https://vault.centos.org${{ matrix.arch == 'arm64' && '/altarch' || '' }}/7.9.2009/updates/${{ matrix.arch == 'arm64' && 'aarch64' || 'x86_64' }}/
           gpgcheck=0
           enabled=1
           [extras]
           name=CentOS-7.9.2009 - Extras
-          baseurl=https://vault.centos.org\${C7_ALT}/7.9.2009/extras/\${C7_ARCH}/
+          baseurl=https://vault.centos.org${{ matrix.arch == 'arm64' && '/altarch' || '' }}/7.9.2009/extras/${{ matrix.arch == 'arm64' && 'aarch64' || 'x86_64' }}/
           gpgcheck=0
           enabled=1
           [sclo-rh]
           name=CentOS-7.9.2009 - SCLo-rh
-          baseurl=https://vault.centos.org\${C7_ALT}/7.9.2009/sclo/\${C7_ARCH}/rh/
+          baseurl=https://vault.centos.org${{ matrix.arch == 'arm64' && '/altarch' || '' }}/7.9.2009/sclo/${{ matrix.arch == 'arm64' && 'aarch64' || 'x86_64' }}/rh/
           gpgcheck=0
           enabled=1
           EOF
