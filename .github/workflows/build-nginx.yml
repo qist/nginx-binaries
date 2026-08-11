@@ -161,10 +161,17 @@ jobs:
           EOF
           yum install -y gcc gcc-c++ make git patch perl perl-IPC-Cmd autoconf automake libtool \
             devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils \
-            xz cmake3 pkgconfig curl file
-          # 启用 devtoolset-9 (gcc 9) 并让 cmake 指向 cmake3
+            xz pkgconfig curl file
+          # 启用 devtoolset-9 (gcc 9)
           source /opt/rh/devtoolset-9/enable
-          ln -sf \$(command -v cmake3 || command -v cmake) /usr/local/bin/cmake
+          # CentOS 7 官方源无 cmake3(EPEL 已 EOL), 改用 Kitware 预编译 cmake 3.27
+          # (xz/libxslt/brotli/mimalloc 均要求 >=3.20)。按架构选包, 软链到 /usr/local/bin/cmake。
+          CMAKE_ARCH=${{ matrix.arch == 'arm64' && 'aarch64' || 'x86_64' }}
+          curl -sL -o /tmp/cmake.tar.gz \
+            https://github.com/Kitware/CMake/releases/download/v3.27.9/cmake-3.27.9-linux-\${CMAKE_ARCH}.tar.gz
+          tar xzf /tmp/cmake.tar.gz -C /tmp
+          ln -sf /tmp/cmake-3.27.9-linux-\${CMAKE_ARCH}/bin/cmake /usr/local/bin/cmake
+          cmake --version | head -1
           MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs \
             bash /workspace/scripts/ci-build.sh /workspace $VERSION ${{ matrix.suffix }} tar.gz"
 

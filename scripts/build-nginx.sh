@@ -92,8 +92,17 @@ export LDFLAGS="-L$LIBS_PREFIX/lib"
 
 # ---------- 平台相关链接参数 (LuaJIT + mimalloc 静态编入) ----------
 if [ "$PLATFORM" = "macos" ]; then
-  # macOS: clang ld 不支持 -Bstatic, 用 -force_load 强制静态链入 .a
-  LD_OPT="-L$LUAJIT_LIB -L$MIMALLOC_LIB -Wl,-force_load,$LUAJIT_LIB/libluajit-5.1.a -Wl,-force_load,$MIMALLOC_LIB/libmimalloc.a"
+  # macOS (ld64): 不用 -Bstatic。
+  # 关键坑: configure 阶段会对 --with-ld-opt 做一次"空程序"链接测试。
+  #   - mimalloc(MI_OVERRIDE) 定义了强符号 malloc/free/calloc/realloc, 若用
+  #     -Wl,-force_load 强塞进测试程序, 会与系统 libc 的 malloc 重定义 -> 链接失败 ->
+  #     ./configure 报 "the invalid value in --with-ld-opt"。
+  #   - libxml2/libxslt 依赖 iconv, 强塞也会因缺 -liconv 报 undefined。
+  # 故 macOS 对 mimalloc/xml 改用"按需"链接 (-lxxx), 仅 luajit 用 -force_load
+  # (luajit 不与系统符号冲突, 且 lua 模块需强制纳入其所有符号)。
+  LD_OPT="-L$LUAJIT_LIB -L$MIMALLOC_LIB"
+  LD_OPT="$LD_OPT -Wl,-force_load,$LUAJIT_LIB/libluajit-5.1.a"
+  LD_OPT="$LD_OPT -lmimalloc -lexslt -lxslt -lxml2 -lz -liconv"
   # macOS 编译额外屏蔽若干告警
   CC_WARN="-Wno-pragma-pack -Wno-unused-but-set-variable -Wno-incompatible-pointer-types -Wno-compare-distinct-pointer-types"
 else
@@ -112,12 +121,10 @@ CC_OPT="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-de
 #   使 CORE_LIBS 里重复出现的 -lxml2 因符号已满足且 as-needed 而不再写入系统动态依赖.
 XML_LIB_DIR="$LIBS_PREFIX/lib"
 if [ "$PLATFORM" = "macos" ]; then
-  # macOS 用 ld64: 不认识 --as-needed / -z relro / -Bstatic 等 GNU ld 选项,
-  # 改用 -force_load 显式静态链入 xml2/xslt/exslt/z (已在上方 LD_OPT 含 luajit/mimalloc force_load)
-  LD_OPT="$LD_OPT -Wl,-force_load,$XML_LIB_DIR/libexslt.a"
-  LD_OPT="$LD_OPT -Wl,-force_load,$XML_LIB_DIR/libxslt.a"
-  LD_OPT="$LD_OPT -Wl,-force_load,$XML_LIB_DIR/libxml2.a"
-  LD_OPT="$LD_OPT -Wl,-force_load,$XML_LIB_DIR/libz.a"
+  # macOS: XML 库已在上方 LD_OPT 用 -lexslt -lxslt -lxml2 -lz -liconv 按需静态链入
+  # (ld64 对 -lxxx 指向的 .a 默认静态链接), 此处不再重复追加, 以免 configure 空链接
+  # 测试因强塞 libxml2.a 缺 -liconv 而失败。
+  :
 else
   # Linux: 用 -Bstatic 包裹静态库, -Bdynamic 收尾 (避免命中系统 .so)
   LD_OPT="$LD_OPT -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-Bstatic"
