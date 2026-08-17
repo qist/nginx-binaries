@@ -63,7 +63,7 @@ RESTY_LIBS=(
   "https://github.com/ElvinEfendi/lua-resty-global-throttle.git"
 )
 DKJSON_REPO="https://github.com/LuaDist/dkjson.git"
-WAF_REPO="https://github.com/qist/waf.git"
+WAF_REPO="https://github.com/qist/nginxguard.git"
 
 # ---------- 路径 ----------
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
