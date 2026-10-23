@@ -7,31 +7,35 @@ set -e
 # 例如: export https_proxy=http://<host>:<port> http_proxy=http://<host>:<port>
 # 注意: github.com 始终直连(脚本内已清空 git 代理), 不要为 github 设代理。
 
-# 1) 替换 yum 源为官方 vault.centos.org (x86_64;EOL 后官方归档,外网可访问,全走代理)
-cat > /etc/yum.repos.d/CentOS-Base.repo <<'EOF'
+# 1) 替换 yum 源为阿里云 centos-vault 归档镜像 (x86_64)
+#    注: vault.centos.org 从国内网络直连会 403, 实测 yum 也未命中代理环境变量;
+#        阿里云归档镜像国内直连全部 200, 不依赖代理。
+#    阿里云镜像同步了 vault 的 os/updates/extras/sclo/sclo-rh 全部目录 (2026-10 实测)。
+VAULT_MIRROR="${VAULT_MIRROR:-https://mirrors.aliyun.com/centos-vault}"
+cat > /etc/yum.repos.d/CentOS-Base.repo <<EOF
 [base]
 name=CentOS-7.9.2009 - Base
-baseurl=https://vault.centos.org/7.9.2009/os/$basearch/
+baseurl=${VAULT_MIRROR}/7.9.2009/os/\$basearch/
 gpgcheck=0
 enabled=1
 [updates]
 name=CentOS-7.9.2009 - Updates
-baseurl=https://vault.centos.org/7.9.2009/updates/$basearch/
+baseurl=${VAULT_MIRROR}/7.9.2009/updates/\$basearch/
 gpgcheck=0
 enabled=1
 [extras]
 name=CentOS-7.9.2009 - Extras
-baseurl=https://vault.centos.org/7.9.2009/extras/$basearch/
+baseurl=${VAULT_MIRROR}/7.9.2009/extras/\$basearch/
 gpgcheck=0
 enabled=1
 [sclo]
 name=CentOS-7.9.2009 - SCLo
-baseurl=https://vault.centos.org/7.9.2009/sclo/$basearch/sclo/
+baseurl=${VAULT_MIRROR}/7.9.2009/sclo/\$basearch/sclo/
 gpgcheck=0
 enabled=1
 [sclo-rh]
 name=CentOS-7.9.2009 - SCLo-rh
-baseurl=https://vault.centos.org/7.9.2009/sclo/$basearch/rh/
+baseurl=${VAULT_MIRROR}/7.9.2009/sclo/\$basearch/rh/
 gpgcheck=0
 enabled=1
 EOF
@@ -58,15 +62,16 @@ cd /workspace
 source /opt/rh/devtoolset-9/enable
 export CC=gcc CXX=g++
 export MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs WORK=/workspace/work
-NGINX_VER="${NGINX_VER:-1.31.3}"
-OPENSSL_VER="${OPENSSL_VER:-3.6.3}"
+# 默认 latest: ci-build.sh 会解析 GitHub releases/latest 的真实版本 (nginx + openssl 各自最新)
+NGINX_VER="${NGINX_VER:-latest}"
+OPENSSL_VER="${OPENSSL_VER:-latest}"
 export NGINX_VER OPENSSL_VER
 
 # 清理宿主挂载目录里残留的裸机构建产物(含写死旧绝对路径的 Makefile/configdata)
 # 避免 docker 内复用导致 cmake/nginx configure 路径冲突。幂等,首次运行无害。
+# openssl-/nginx- 用通配: latest 模式下版本号在 ci-build.sh 里才解析出来
 echo "==> 清理可能污染构建的残留产物"
-rm -rf "$MODULE_ROOT/openssl-$OPENSSL_VER" "$WORK" \
-       "$MODULE_ROOT/nginx-$NGINX_VER" 2>/dev/null || true
+rm -rf "$MODULE_ROOT"/openssl-* "$MODULE_ROOT"/nginx-1.* "$WORK" 2>/dev/null || true
 for m in "$MODULE_ROOT"/{ngx_devel_kit,set-misc-nginx-module,ngx_http_substitutions_filter_module,nginx-http-auth-digest,ngx_cache_purge,nginx-upsync-module,echo-nginx-module,mod_zip,nginx-upstream-dynamic-servers,headers-more-nginx-module,nginx-module-vts,nginx-dav-ext-module,ngx_brotli,ngx-fancyindex,nginx-module-sts,nginx-module-stream-sts,lua-nginx-module,stream-lua-nginx-module,lua-upstream-nginx-module}; do
   [ -d "$m" ] && rm -rf "$m/objs" "$m/Makefile" 2>/dev/null || true
 done
