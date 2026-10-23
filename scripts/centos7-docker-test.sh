@@ -76,4 +76,4 @@ for m in "$MODULE_ROOT"/{ngx_devel_kit,set-misc-nginx-module,ngx_http_substituti
   [ -d "$m" ] && rm -rf "$m/objs" "$m/Makefile" 2>/dev/null || true
 done
 
-bash scripts/ci-build.sh /workspace "$NGINX_VER" glibc_amd64 tar.gz
+bash scripts/ci-build.sh /workspace "$NGINX_VER" "${SUFFIX:-glibc_amd64}" tar.gz
