@@ -184,8 +184,12 @@ jobs:
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace -e GITHUB_TOKEN ${{ matrix.docker-image }} \
-            sh -c "set -ex && apk update && apk add build-base git patch perl autoconf automake libtool cmake pkgconfig linux-headers curl xz bash &&
+            sh -c "set -ex && apk update && apk add build-base git patch perl autoconf automake libtool cmake pkgconfig linux-headers curl xz bash sed coreutils &&
             MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs bash /workspace/scripts/ci-build.sh /workspace $VERSION ${{ matrix.suffix }} tar.gz"
+            # 注: 必须装 GNU coreutils(cat -s) + GNU sed (Alpine 默认 busybox 不支持)。
+            # ngx_devel_kit 的 auto/build 用 cat -s 读数据文件、GNU sed 扩展正则生成
+            # ndk_palloc.h 等头文件; busybox cat -s 静默失败导致整段宏缺失,
+            # set-misc 等模块链接时报 ndk_palloc_re undefined reference。
 
       - name: Build macOS
         if: matrix.os == 'macos'

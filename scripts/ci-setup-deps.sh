@@ -39,10 +39,16 @@ else
     export http_proxy="${http_proxy}"
     echo "==> 已透传环境代理(仅用于 curl/wget 下载, github 直连): ${http_proxy}"
   fi
-  # github 直连: 清空 git 的全局代理, 确保 clone 不绕代理
-  git config --global --unset http.proxy 2>/dev/null || true
-  git config --global --unset https.proxy 2>/dev/null || true
-  git config --global http.https://github.com.proxy "" 2>/dev/null || true
+  # github 代理开关: 默认直连 (CI 假设 github 畅通, 清掉 git 代理配置保证不绕路)。
+  # GITHUB_VIA_PROXY=1 时不清理, git clone 走 https_proxy 环境变量
+  # (本地/国内网络 github 直连不稳定时使用, 如 2.186 docker 实测)。
+  if [ "${GITHUB_VIA_PROXY:-0}" = "1" ]; then
+    echo "==> GITHUB_VIA_PROXY=1: git clone 将走 https_proxy 代理"
+  else
+    git config --global --unset http.proxy 2>/dev/null || true
+    git config --global --unset https.proxy 2>/dev/null || true
+    git config --global http.https://github.com.proxy "" 2>/dev/null || true
+  fi
 fi
 
 # 并发数: Linux/docker 用 nproc, macOS 用 sysctl

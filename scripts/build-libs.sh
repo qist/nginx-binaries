@@ -69,11 +69,14 @@ WAF_REPO="https://github.com/qist/nginxguard.git"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="${WORK:-$ROOT/work}"
 
-# 代理: CI 与本地均不配置 git 代理, github.com 始终直连(避免 clone 绕代理失败)。
-# 非 CI 环境若存在 http_proxy/https_proxy, 仅透传给 curl/wget 下载源码包。
-git config --global --unset http.proxy 2>/dev/null || true
-git config --global --unset https.proxy 2>/dev/null || true
-git config --global http.https://github.com.proxy "" 2>/dev/null || true
+# 代理: 默认 github.com 直连 (CI 假设 github 畅通, git clone 不绕代理)。
+# GITHUB_VIA_PROXY=1 时不清理 git 代理配置, clone 走 https_proxy 环境变量
+# (本地/国内网络 github 直连不稳定时使用, 如 2.186 docker 实测)。
+if [ "${GITHUB_VIA_PROXY:-0}" != "1" ]; then
+  git config --global --unset http.proxy 2>/dev/null || true
+  git config --global --unset https.proxy 2>/dev/null || true
+  git config --global http.https://github.com.proxy "" 2>/dev/null || true
+fi
 mkdir -p "$WORK"
 LUA_ROOT="$WORK/lua"
 LUAJIT_DIR="$WORK/luajit"
