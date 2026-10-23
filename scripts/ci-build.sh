@@ -29,16 +29,17 @@ export WORK="${WORK:-$ROOT/work}"
 #   nginx  : nginx/nginx        tag 形如 release-1.31.8 -> 1.31.8
 #   openssl: openssl/openssl    tag 形如 openssl-4.0.3  -> 4.0.3
 # CI (Actions 运行器自带 GITHUB_TOKEN 环境变量) 会带认证, 规避匿名 60 次/小时限流
+# 解析用 sed 而非 grep -oP: Alpine (busybox grep) / macOS (BSD grep) 无 -P 支持
 gh_latest_tag() {
   if [ -n "${GITHUB_TOKEN:-}" ]; then
     curl -fsSL --retry 3 --connect-timeout 10 \
       -H "Authorization: Bearer $GITHUB_TOKEN" \
       "https://api.github.com/repos/$1/releases/latest" \
-      | grep -oP '"tag_name":\s*"\K[^"]+' | head -1
+      | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
   else
     curl -fsSL --retry 3 --connect-timeout 10 \
       "https://api.github.com/repos/$1/releases/latest" \
-      | grep -oP '"tag_name":\s*"\K[^"]+' | head -1
+      | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
   fi
 }
 if [ -z "$VER" ] || [ "$VER" = "latest" ]; then

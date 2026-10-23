@@ -131,9 +131,11 @@ jobs:
 
       - name: Build with Docker (CentOS 7)
         if: matrix.use-docker && matrix.os == 'centos7'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
+          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace -e GITHUB_TOKEN ${{ matrix.docker-image }} \
             bash -c "set -ex
             # 安装官方 vault 归档源 + SCL(devtoolset-9)
             # arm64 源在 altarch 路径下, x86_64 在常规路径 (Actions 表达式直接拼 URL, 避免变量被外层 shell 展开)
@@ -177,14 +179,18 @@ jobs:
 
       - name: Build with Docker (Alpine)
         if: matrix.use-docker && matrix.os == 'alpine'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
-          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace ${{ matrix.docker-image }} \
+          docker run --rm --platform linux/${{ matrix.arch }} -v $PWD:/workspace -w /workspace -e GITHUB_TOKEN ${{ matrix.docker-image }} \
             sh -c "set -ex && apk update && apk add build-base git patch perl autoconf automake libtool cmake pkgconfig linux-headers curl xz bash &&
             MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs bash /workspace/scripts/ci-build.sh /workspace $VERSION ${{ matrix.suffix }} tar.gz"
 
       - name: Build macOS
         if: matrix.os == 'macos'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${{ needs.check-version.outputs.new_version }}
           brew install pcre zlib cmake pkg-config autoconf automake libtool
