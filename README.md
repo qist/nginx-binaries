@@ -8,7 +8,7 @@
 - ✅ **增量构建** - 只对新发布的版本进行构建，避免重复工作
 - ✅ **多平台支持** - 覆盖主流操作系统和架构
 - ✅ **丰富的模块** - 包含常用的第三方 nginx 模块
-- ✅ **HTTP/3 支持** - 基于 OpenSSL 3.6.3 + nginx 原生 `--with-http_v3_module`，支持 QUIC/HTTP3
+- ✅ **HTTP/3 支持** - 基于最新稳定版 OpenSSL（CI 自动跟踪官方 release，不固定版本）+ nginx 原生 `--with-http_v3_module`，支持 QUIC/HTTP3
 
 ## 支持的平台
 
@@ -153,7 +153,7 @@
 ## 技术栈
 
 - **nginx**: `1.31.3`（版本号由 `NGINX_VER` 环境变量贯穿控制，默认见各脚本）
-- **OpenSSL**: 原生 `openssl-3.6.3`（启用 TLS 1.3 + nginx 原生 HTTP/3，无 QuicTLS 依赖）
+- **OpenSSL**: 原生最新稳定版（CI 自动获取 openssl/openssl 最新 release，不固定版本；如需锁定可显式指定 `OPENSSL_VER=x.y.z`。启用 TLS 1.3 + nginx 原生 HTTP/3，无 QuicTLS 依赖）
 - **LuaJIT**: openresty/luajit2 2.1（静态编入）
 - **mimalloc**: microsoft/mimalloc 2.1.9（静态编入，`MI_OVERRIDE` 接管默认分配器）
 - **依赖库**（静态链接，随包发布）:
