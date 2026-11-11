@@ -39,27 +39,11 @@ cp -R "$NGX/conf" "$OUT/conf"
 cp -R "$NGX/docs/html" "$OUT/html" 2>/dev/null || true
 
 # 纯 lua 生态 + waf
+# WAF 代码与规则由 build-libs.sh 拉取 (qist/nginxguard main) 并放入 $WORK/lua/waf/,
+# 随此处的整体拷贝进入包内 —— 布局: <root>/lua/waf/{*.lua, rule-config/}
 if [ -d "$WORK/lua" ]; then
   cp -R "$WORK/lua" "$OUT/lua"
 fi
-
-# NginxGuard WAF 代码 + 规则 (来自 qist/nginxguard main, 打包进 release 开箱即用)
-# 布局对齐实际部署: <root>/lua/waf/{access,lib,config,init}.lua + <root>/waf/rule-config/
-WAF_TMP="$(mktemp -d)"
-if git clone --depth=1 https://github.com/qist/nginxguard.git "$WAF_TMP/nginxguard" 2>/dev/null; then
-  mkdir -p "$OUT/lua/waf" "$OUT/waf/rule-config"
-  for f in access.lua lib.lua config.lua init.lua; do
-    [ -f "$WAF_TMP/nginxguard/$f" ] && cp "$WAF_TMP/nginxguard/$f" "$OUT/lua/waf/"
-  done
-  if [ -d "$WAF_TMP/nginxguard/rule-config" ]; then
-    cp -R "$WAF_TMP/nginxguard/rule-config/." "$OUT/waf/rule-config/"
-  fi
-  echo "==> WAF 代码与规则已打包 (nginxguard $(git -C "$WAF_TMP/nginxguard" rev-parse --short HEAD 2>/dev/null || echo main))"
-else
-  echo "WARNING: nginxguard clone 失败, release 不包含 WAF 代码"
-fi
-rm -rf "$WAF_TMP"
-
 mkdir -p "$OUT/luajit-share"
 if [ -d "$WORK/luajit/usr/local/share/lua" ]; then
   cp -R "$WORK/luajit/usr/local/share/lua" "$OUT/luajit-share/lua"
