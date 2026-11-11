@@ -9,6 +9,11 @@ on:
         description: 'Nginx version to build (e.g., 1.31.1)'
         required: false
         default: ''
+      force_build:
+        description: 'Force rebuild even if tag v<version> already exists (keeps tag, overwrites release assets)'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -51,8 +56,14 @@ jobs:
         run: |
           LATEST_TAG=${{ steps.get-nginx-version.outputs.latest_nginx_tag }}
           VERSION=$(echo $LATEST_TAG | sed 's/release-//')
-          
-          if git tag | grep -q "v$VERSION"; then
+          FORCE="${{ github.event.inputs.force_build }}"
+
+          if [ "$FORCE" = "true" ]; then
+            # 强制构建: 不删除已有 tag, 直接重建并覆盖 release 产物
+            echo "Force build enabled: rebuilding $VERSION (existing tag v$VERSION is kept)"
+            echo "new_version=$VERSION" >> $GITHUB_OUTPUT
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          elif git tag | grep -q "v$VERSION"; then
             echo "Version $VERSION already exists, skipping build"
             echo "new_version=$VERSION" >> $GITHUB_OUTPUT
             echo "should_build=false" >> $GITHUB_OUTPUT
@@ -329,6 +340,26 @@ jobs:
         with:
           path: artifacts
           pattern: nginx_${{ needs.check-version.outputs.new_version }}_*
+
+      - name: Remove existing release assets (force rebuild)
+        if: github.event.inputs.force_build == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ needs.check-version.outputs.new_version }}"
+          REPO="$GITHUB_REPOSITORY"
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Release $TAG exists, removing assets of version ${{ needs.check-version.outputs.new_version }}"
+            gh api "repos/$REPO/releases/tags/$TAG" \
+              --jq '.assets[] | select(.name | startswith("nginx_${{ needs.check-version.outputs.new_version }}_")) | .name' \
+              | while read -r asset; do
+                  [ -z "$asset" ] && continue
+                  echo "  deleting asset: $asset"
+                  gh release delete-asset "$TAG" "$asset" --repo "$REPO" --yes
+                done
+          else
+            echo "Release $TAG not found, nothing to remove"
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

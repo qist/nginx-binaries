@@ -101,6 +101,16 @@
 2. 选择 `Auto Build Nginx Multi-Platform` 工作流
 3. 点击 `Run workflow`
 
+### 强制重建已有版本
+同一版本（如构建脚本修复后需要重新出包）无需删除 tag 重建：
+
+1. Actions 页面 → `Run workflow`
+2. `version` 填写目标版本（如 `1.31.8`）
+3. `force_build` 勾选 `true`
+4. 运行后：已有 tag `v1.31.8` 与 Release 均保留，同名构建产物（assets）会被覆盖更新
+
+不填 `version` 时以 nginx 官方最新 release 为准；`force_build=false`（默认）时保持原有"tag 已存在即跳过"逻辑。
+
 ### 下载二进制包
 1. 进入 GitHub 仓库的 Releases 页面
 2. 选择对应版本
