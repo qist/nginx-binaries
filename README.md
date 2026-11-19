@@ -152,7 +152,7 @@
 
 ## 技术栈
 
-- **nginx**: `1.31.3`（版本号由 `NGINX_VER` 环境变量贯穿控制，默认见各脚本）
+- **nginx**: 版本由 CI 每次构建自动获取 `nginx/nginx` 最新 release（可用 `NGINX_VER=x.y.z` 锁定；本地构建默认见各脚本）
 - **OpenSSL**: 原生最新稳定版（CI 自动获取 openssl/openssl 最新 release，不固定版本；如需锁定可显式指定 `OPENSSL_VER=x.y.z`。启用 TLS 1.3 + nginx 原生 HTTP/3，无 QuicTLS 依赖）
 - **LuaJIT**: openresty/luajit2 2.1（静态编入）
 - **mimalloc**: microsoft/mimalloc 2.1.9（静态编入，`MI_OVERRIDE` 接管默认分配器）
@@ -167,6 +167,10 @@
 ## 注意事项
 
 1. **Linux 兼容性**: 不同发行版的二进制包不兼容，请下载对应系统的包
+   - glibc 系产物在 **CentOS 7.9（glibc 2.17）** 构建，可在所有 glibc ≥ 2.17 的发行版运行
+   - ⚠️ **RHEL / Rocky / Alma / CentOS Stream 9/10、Fedora 34+** 默认缺 `libcrypt.so.1`，需先安装兼容包：`dnf install -y libxcrypt-compat`
+   - Alpine 用 `musl_amd64` 包（基础镜像需 `apk add libgcc`）
+   - 详细兼容矩阵 / 报错对照 / 验证方法见 **[COMPATIBILITY.md](COMPATIBILITY.md)**
 2. **macOS**: 需要 macOS 10.15+
 3. **Windows**: 需要 Windows 10+
 4. **ARM 架构**: 在 ARM64 (aarch64) 硬件或 aarch64 容器中**原生编译**，无需交叉编译或 QEMU 模拟
