@@ -57,6 +57,11 @@ dnf install -y libxcrypt-compat
 ```
 
 - 另：RHEL 10 起默认不再安装 32 位 (i686) multilib，对 x86_64 产物无影响。
+- **RHEL 10 硬件门槛**：RHEL 10 全家（Rocky/Alma/Stream 10）的 glibc 自身要求 CPU
+  支持 **x86-64-v3**（AVX2/BMI2，约 2013 年 Haswell 及之后）。在不支持 v3 的老 CPU 上
+  连系统本身都无法运行（`Fatal glibc error: CPU does not support x86-64-v3`），
+  这与我们的产物无关——本仓库二进制是 x86-64 基线版，CPU 只要比目标系统新即可。
+  （实测：2026-11-19 在不支持 v3 的老 Xeon 上，Rocky 10 容器 glibc 直接 Fatal error。）
 
 ## 四、常见报错对照
 
