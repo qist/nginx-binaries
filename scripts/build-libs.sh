@@ -35,7 +35,9 @@ echo "==> 平台: $PLATFORM | NPROC=$NPROC"
 
 # ---------- 可调参数 ----------
 NGINX_VER="${NGINX_VER:-1.31.3}"
-OPENSSL_VER="${OPENSSL_VER:-3.6.3}"
+# 3.5.9 LTS: 支持 2030-04; 3.6 系列已结束官方支持; 4.0.x/4.1.0 受 CVE-2026-121481
+# (EVP_EncodeBlock 堆溢出, 修复版 4.0.4/4.1.1 尚未发布), 4.1.1 发布后再评估切换
+OPENSSL_VER="${OPENSSL_VER:-3.5.9}"
 OPENSSL_REPO="https://github.com/openssl/openssl.git"
 LUAJIT_REPO="https://github.com/openresty/luajit2.git"
 MIMALLOC_REPO="https://github.com/microsoft/mimalloc.git"
