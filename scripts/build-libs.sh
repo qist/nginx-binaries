@@ -35,10 +35,11 @@ echo "==> 平台: $PLATFORM | NPROC=$NPROC"
 
 # ---------- 可调参数 ----------
 NGINX_VER="${NGINX_VER:-1.31.3}"
-# 3.5.10 LTS: 支持 2030-04; 3.6 系列已结束官方支持; 4.0.x/4.1.0 受 CVE-2026-121481
+# 3.5.9 LTS: 支持 2030-04; 3.6 系列已结束官方支持; 4.0.x/4.1.0 受 CVE-2026-121481
 # (EVP_EncodeBlock 堆溢出, 修复版 4.0.4/4.1.1 尚未发布), 3.x 不受影响
-# 3.5.10 (2026-11-17) 补 3 个 Low: CVE-2026-107493/124709/35190, 3.5.10 发布后再评估 4.1.1
-OPENSSL_VER="${OPENSSL_VER:-3.5.10}"
+# 注: 3.5 分支当前最新即 3.5.9 (openssl-3.5.10 tag 不存在, 11-17 批次的 3 个 Low
+#     CVE-2026-107493/124709/35190 待 3.5.10 实际发布后再升)
+OPENSSL_VER="${OPENSSL_VER:-3.5.9}"
 OPENSSL_REPO="https://github.com/openssl/openssl.git"
 LUAJIT_REPO="https://github.com/openresty/luajit2.git"
 MIMALLOC_REPO="https://github.com/microsoft/mimalloc.git"
