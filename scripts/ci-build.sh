@@ -48,8 +48,9 @@ if [ -z "$VER" ] || [ "$VER" = "latest" ]; then
 fi
 [ -n "$VER" ] || { echo "!! 无法获取 nginx 最新 release, 可显式传入版本号"; exit 1; }
 if [ -z "${OPENSSL_VER:-}" ] || [ "${OPENSSL_VER:-}" = "latest" ]; then
-  TAG="$(gh_latest_tag openssl/openssl)"
-  OPENSSL_VER="${TAG#openssl-}"
+  # CVE-2026-121481: latest=openssl-4.1.0 在受影响区间 (修复版 4.0.4/4.1.1 尚未发布),
+  # 3.x 不受影响; 3.6 系列 EOL -> 锁定 3.5 LTS 最新 3.5.9; 4.1.1 发布后恢复跟随 latest
+  OPENSSL_VER="3.5.9"
 fi
 [ -n "$OPENSSL_VER" ] || { echo "!! 无法获取 openssl 最新 release, 可显式 export OPENSSL_VER=x.y.z"; exit 1; }
 echo "==> [ci-build] 版本解析: nginx=$VER openssl=$OPENSSL_VER"
