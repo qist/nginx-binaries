@@ -60,16 +60,24 @@ cleanup() {
 trap cleanup EXIT
 
 # macOS / 慢机器上 python 起监听可能超过固定 sleep：逐个等端口真的 listen。
+# 用 python 探测（macOS 的 bash 3.2 没有 /dev/tcp，也没有 GNU seq）。
 wait_listen() {
   local port=$1
-  for _ in $(seq 1 80); do
-    if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
-      exec 3<&- 2>/dev/null || true
-      return 0
-    fi
-    sleep 0.1
-  done
-  return 1
+  python3 - "$port" <<'PY'
+import socket, sys, time
+port = int(sys.argv[1])
+deadline = time.time() + 8
+while time.time() < deadline:
+    s = socket.socket()
+    s.settimeout(0.5)
+    try:
+        if s.connect_ex(("127.0.0.1", port)) == 0:
+            sys.exit(0)
+    finally:
+        s.close()
+    time.sleep(0.1)
+sys.exit(1)
+PY
 }
 
 mkdir -p "$TMP/conf" "$TMP/logs"
@@ -185,6 +193,7 @@ cat >> "$TMP/conf/nginx.conf" <<EOF
 EOF
 
 # 先做配置检查：未打补丁的原生 nginx 会在这里报 invalid value "$pp_v2"
+echo "[smoke] lua_dir=${LUA_DIR:-none} prefix=$TMP"
 if ! "$NGINX_BIN" -p "$TMP" -c conf/nginx.conf -t >"$TMP/conf-test.log" 2>&1; then
   echo "!! nginx -t 失败（补丁未生效？）" >&2
   cat "$TMP/conf-test.log" >&2
@@ -224,9 +233,15 @@ for port in "$B_V2" "$B_V1" "$B_OFF" "$B_LON" "$B_LV2" "$B_RETRY" \
   wait_listen "$port" || { echo "!! 后端未就绪: $port" >&2; exit 1; }
 done
 
-( cd "${LUA_DIR:-$PWD}" && "$NGINX_BIN" -p "$TMP" -c conf/nginx.conf )
+echo "[smoke] backends ready"
+if ! ( cd "${LUA_DIR:-$PWD}" && "$NGINX_BIN" -p "$TMP" -c conf/nginx.conf ); then
+  echo "!! nginx 启动失败" >&2
+  tail -20 "$TMP/logs/error.log" 2>/dev/null >&2 || true
+  exit 1
+fi
 wait_listen "$P_V2" || { echo "!! nginx 未监听 $P_V2" >&2; tail -20 "$TMP/logs/error.log" >&2 2>/dev/null; exit 1; }
 
+echo "[smoke] nginx ready, running clients"
 python3 - "$P_V2" "$P_V1" "$P_OFF" "$P_LON" "$P_LV2" "$P_RETRY" <<'PY'
 import socket, sys, time
 marker = b"ngx-pp-var-smoke"
