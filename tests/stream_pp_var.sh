@@ -59,6 +59,19 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# macOS / 慢机器上 python 起监听可能超过固定 sleep：逐个等端口真的 listen。
+wait_listen() {
+  local port=$1
+  for _ in $(seq 1 80); do
+    if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
+      exec 3<&- 2>/dev/null || true
+      return 0
+    fi
+    sleep 0.1
+  done
+  return 1
+}
+
 mkdir -p "$TMP/conf" "$TMP/logs"
 
 cat > "$TMP/backend.py" <<'PY'
@@ -206,16 +219,30 @@ for pair in "$B_V2:$TMP/out_v2.bin" "$B_V1:$TMP/out_v1.bin" "$B_OFF:$TMP/out_off
   python3 "$TMP/backend.py" "$port" "$out" &
   BACK_PIDS+=("$!")
 done
-sleep 0.3
+for port in "$B_V2" "$B_V1" "$B_OFF" "$B_LON" "$B_LV2" "$B_RETRY" \
+            "$B_SNI" "$B_SNIOFF" "$B_SSL"; do
+  wait_listen "$port" || { echo "!! 后端未就绪: $port" >&2; exit 1; }
+done
 
 ( cd "${LUA_DIR:-$PWD}" && "$NGINX_BIN" -p "$TMP" -c conf/nginx.conf )
-sleep 0.3
+wait_listen "$P_V2" || { echo "!! nginx 未监听 $P_V2" >&2; tail -20 "$TMP/logs/error.log" >&2 2>/dev/null; exit 1; }
 
 python3 - "$P_V2" "$P_V1" "$P_OFF" "$P_LON" "$P_LV2" "$P_RETRY" <<'PY'
 import socket, sys, time
 marker = b"ngx-pp-var-smoke"
+
+def connect(port, tries=50):
+    last = None
+    for _ in range(tries):
+        try:
+            return socket.create_connection(("127.0.0.1", port), timeout=3)
+        except OSError as e:
+            last = e
+            time.sleep(0.1)
+    raise last
+
 for port in map(int, sys.argv[1:]):
-    s = socket.create_connection(("127.0.0.1", port), timeout=3)
+    s = connect(port)
     s.sendall(marker)
     s.close()
 time.sleep(0.8)
@@ -321,6 +348,10 @@ if 'invalid proxy_protocol value "bogus"' not in log_text:
 if fail:
     for f in fail:
         print("!! " + f, file=sys.stderr)
+    tail_log = log_text.strip().splitlines()[-15:]
+    if tail_log:
+        print("--- nginx error.log (tail) ---", file=sys.stderr)
+        print("\n".join(tail_log), file=sys.stderr)
     raise SystemExit(1)
 
 tail = "proxy_ssl ordering" if stream_ssl else "proxy_ssl SKIPPED (no --with-stream_ssl_module)"
