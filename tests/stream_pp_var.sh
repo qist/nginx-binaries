@@ -17,6 +17,23 @@ NGINX_BIN="${1:?用法: stream_pp_var.sh /path/to/nginx}"
 [ -x "$NGINX_BIN" ] || { echo "!! nginx 不可执行: $NGINX_BIN" >&2; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo "!! 需要 python3" >&2; exit 1; }
 
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# lua-nginx-module 版 nginx 启动时会 require('resty.core')，默认搜索路径含
+# 相对路径 ./resty/core.lua：把启动时的 CWD 切到随包提供的 lua 目录即可命中。
+# 找不到就明确失败，不允许“跳过冒烟”把没验证过的二进制发出去。
+LUA_DIR=""
+if "$NGINX_BIN" -V 2>&1 | grep -q "lua-nginx-module"; then
+  for d in "$ROOT/work/lua" "$ROOT/lua" "$ROOT/../lua-resty-core/lib"; do
+    if [ -f "$d/resty/core.lua" ]; then LUA_DIR="$d"; break; fi
+  done
+  if [ -z "$LUA_DIR" ]; then
+    echo "!! nginx 含 lua-nginx-module 但找不到 resty/core.lua（试过 $ROOT/work/lua 等）" >&2
+    echo "   没有它 nginx 启动即失败，无法验证；请检查构建机 lua 目录布局" >&2
+    exit 1
+  fi
+fi
+
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/ngx-pp-var.XXXXXX")"
 # 动态取 20 个空闲端口，避免 CI 并行/本机占用导致 flaky
 read -r P_V2 B_V2 P_V1 B_V1 P_OFF B_OFF P_LON B_LON P_LV2 B_LV2 P_RETRY B_RETRY B_DOWN \
@@ -71,6 +88,9 @@ PY
 
 cat > "$TMP/conf/nginx.conf" <<EOF
 worker_processes 1;
+# 官方打包的二进制 configure 时带 --user=nginx；CI runner / 本地没有该用户时
+# 以 root 启动会 getpwnam 失败。测试显式降为 root（非 root 运行时该指令被忽略）。
+user root;
 error_log logs/error.log info;
 pid logs/nginx.pid;
 events { worker_connections 64; }
@@ -161,6 +181,7 @@ fi
 # 静态非法值必须在配置阶段就报错（不能等到第一个连接才失败）
 cat > "$TMP/conf/bad.conf" <<EOF
 worker_processes 1;
+user root;
 events { worker_connections 8; }
 stream {
     server { listen 127.0.0.1:1; proxy_pass 127.0.0.1:2; proxy_protocol invalid; }
@@ -187,7 +208,7 @@ for pair in "$B_V2:$TMP/out_v2.bin" "$B_V1:$TMP/out_v1.bin" "$B_OFF:$TMP/out_off
 done
 sleep 0.3
 
-"$NGINX_BIN" -p "$TMP" -c conf/nginx.conf
+( cd "${LUA_DIR:-$PWD}" && "$NGINX_BIN" -p "$TMP" -c conf/nginx.conf )
 sleep 0.3
 
 python3 - "$P_V2" "$P_V1" "$P_OFF" "$P_LON" "$P_LV2" "$P_RETRY" <<'PY'
