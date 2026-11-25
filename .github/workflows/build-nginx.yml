@@ -404,7 +404,7 @@ jobs:
             Auto-built nginx ${{ needs.check-version.outputs.new_version }} binaries for multiple platforms.
             
             ## Included Modules
-            - HTTP/3 (QUIC) support via OpenSSL 3.6.3 + nginx native HTTP/3 module (Windows excluded)
+            - HTTP/3 (QUIC) support via OpenSSL (version resolved at build time, pinned per security policy — see build log; Windows excluded) + nginx native HTTP/3 module
             - Lua scripting (LuaJIT + lua-nginx-module + resty-* ecosystem + cjson/dkjson + qist/waf) (Windows excluded)
             - Headers more
             - VTS (Virtual host traffic status)
