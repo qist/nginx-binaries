@@ -34,7 +34,29 @@ if "$NGINX_BIN" -V 2>&1 | grep -q "lua-nginx-module"; then
   fi
 fi
 
+# user 指令只在 master 是 root 时生效：非 root 会被忽略并打 warn
+# （"the \"user\" directive makes sense only if the master process runs with
+#  super-user privileges"）。所以：
+#   - 以 root 运行：显式降权到专用 nginx 账号（没有就创建），绝不 root 跑 worker；
+#   - 非 root 运行：不写 user 指令，直接用当前账号。
+USER_CONF=""
+if [ "$(id -u)" = "0" ]; then
+  if ! getent passwd nginx >/dev/null 2>&1; then
+    if command -v useradd >/dev/null 2>&1; then
+      getent group nginx >/dev/null 2>&1 || groupadd -r nginx
+      useradd -r -g nginx -M -s /sbin/nologin nginx
+      echo "==> 已创建 nginx 账号（worker 降权）"
+    else
+      echo "!! 以 root 运行但无法创建 nginx 账号（缺少 useradd），拒绝以 root 跑 worker" >&2
+      exit 1
+    fi
+  fi
+  USER_CONF="user nginx;"
+fi
+
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/ngx-pp-var.XXXXXX")"
+# root 启动时 worker 会 setuid 到 nginx：临时目录需可写（仅测试用目录）。
+if [ -n "$USER_CONF" ]; then chmod -R a+rwX "$TMP"; fi
 # 动态取 20 个空闲端口，避免 CI 并行/本机占用导致 flaky
 read -r P_V2 B_V2 P_V1 B_V1 P_OFF B_OFF P_LON B_LON P_LV2 B_LV2 P_RETRY B_RETRY B_DOWN \
         P_SNI B_SNI B_SNIOFF P_SSL B_SSL P_BAD B_BAD < <(python3 - <<'PY'
@@ -109,9 +131,7 @@ PY
 
 cat > "$TMP/conf/nginx.conf" <<EOF
 worker_processes 1;
-# 官方打包的二进制 configure 时带 --user=nginx；CI runner / 本地没有该用户时
-# 以 root 启动会 getpwnam 失败。测试显式降为 root（非 root 运行时该指令被忽略）。
-user root;
+${USER_CONF}
 error_log logs/error.log info;
 pid logs/nginx.pid;
 events { worker_connections 64; }
@@ -203,7 +223,7 @@ fi
 # 静态非法值必须在配置阶段就报错（不能等到第一个连接才失败）
 cat > "$TMP/conf/bad.conf" <<EOF
 worker_processes 1;
-user root;
+${USER_CONF}
 events { worker_connections 8; }
 stream {
     server { listen 127.0.0.1:1; proxy_pass 127.0.0.1:2; proxy_protocol invalid; }
