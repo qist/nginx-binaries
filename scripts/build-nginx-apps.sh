@@ -44,7 +44,7 @@ echo "==> 平台: $PLATFORM | NPROC=$NPROC"
 # ---------- 路径 ----------
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="${WORK:-$ROOT/work}"
-NGINX_VER="${NGINX_VER:-1.31.3}"
+NGINX_VER="${NGINX_VER:-1.31.9}"
 OPENSSL_VER="${OPENSSL_VER:-3.6.3}"
 
 # 第三方模块源码所在根目录 (CI docker 内为 /workspace, 直编 / macos 为 $GITHUB_WORKSPACE, 本机为 $ROOT)
@@ -171,6 +171,16 @@ if [ -d "$MODULE_ROOT/nginx_upstream_check_module" ]; then
   fi
 fi
 
+# ---------- 补丁 (stream proxy_protocol 支持变量：按 SNI 选择 v1/v2/off) ----------
+# 逻辑与其它构建变体共用 scripts/apply-nginx-patches.sh：
+#   - 已应用则跳过；< 1.31.4 默认报错（ALLOW_UNPATCHED=1 才跳过）；
+#   - 必须 --fuzz=0 干净应用，失败立即中止构建。
+bash "$ROOT/scripts/apply-nginx-patches.sh" "$SRC" "$NGINX_VER"
+if grep -q "proxy_protocol_var" "$SRC/src/stream/ngx_stream_proxy_module.c" 2>/dev/null; then
+  # 能力标记：面板/运维可用 `nginx -V 2>&1 | grep NGX_STREAM_PP_VAR` 判断是否支持
+  CC_OPT="$CC_OPT -DNGX_STREAM_PP_VAR"
+fi
+
 # ---------- configure (整合 yml 全部模块, 只增不删) ----------
 # file AIO 仅在 Linux/FreeBSD 可用; macOS 无 AIO 支持, configure 会直接报
 # "no supported file AIO was found" 并退出, 故 macOS 不传 --with-file-aio。
@@ -291,3 +301,15 @@ echo "   lua_package_path \"$LUA_ROOT/?.lua;$LUA_ROOT/?/init.lua;$LUA_ROOT/waf/?
 echo "   # WAF 挂载示例:"
 echo "   #   init_by_lua_file $LUA_ROOT/waf/init.lua;"
 echo "   #   access_by_lua_file $LUA_ROOT/waf/access.lua;"
+
+# ---------- 功能冒烟 (stream pp-var) ----------
+# 只做“编译过”不够：补丁打歪时 nginx -t 仍可能通过，必须抓后端首包验证。
+# 依赖 python3；构建容器若没有 python3 会自动跳过（CI 宿主机另跑 tests/stream_pp_var.sh）。
+if [ "${RUN_SMOKE_TESTS:-1}" = "1" ] && [ -x "$ROOT/tests/stream_pp_var.sh" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    echo "==> 冒烟测试: stream proxy_protocol 变量"
+    "$ROOT/tests/stream_pp_var.sh" "$SRC/objs/nginx"
+  else
+    echo "==> 跳过冒烟测试 (无 python3，请在 CI runner 上单独执行 tests/stream_pp_var.sh)"
+  fi
+fi

@@ -1,0 +1,221 @@
+--- a/src/stream/ngx_stream_upstream.h
++++ b/src/stream/ngx_stream_upstream.h
+@@ -152,6 +152,14 @@
+     unsigned                           connected:1;
+     unsigned                           proxy_protocol:2;
+     unsigned                           half_closed:1;
++
++    /*
++     * proxy_protocol_mode 保存本会话解析后的最终策略（0/1/2），
++     * proxy_protocol_resolved 标记是否已解析：upstream 重试时复用，
++     * 不再重复求值；两者都追加在原有位域之后，保持既有成员布局不变。
++     */
++    unsigned                           proxy_protocol_mode:2;
++    unsigned                           proxy_protocol_resolved:1;
+ } ngx_stream_upstream_t;
+ 
+ 
+--- a/src/stream/ngx_stream_proxy_module.c
++++ b/src/stream/ngx_stream_proxy_module.c
+@@ -31,6 +31,7 @@
+     ngx_uint_t                       next_upstream_tries;
+     ngx_flag_t                       next_upstream;
+     ngx_uint_t                       proxy_protocol;
++    ngx_stream_complex_value_t      *proxy_protocol_var;
+     ngx_flag_t                       half_close;
+     ngx_stream_upstream_local_t     *local;
+     ngx_flag_t                       socket_keepalive;
+@@ -92,6 +93,8 @@
+     void *child);
+ static char *ngx_stream_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd,
+     void *conf);
++static char *ngx_stream_proxy_protocol(ngx_conf_t *cf, ngx_command_t *cmd,
++    void *conf);
+ static char *ngx_stream_proxy_bind(ngx_conf_t *cf, ngx_command_t *cmd,
+     void *conf);
+ 
+@@ -145,14 +148,6 @@
+ };
+ 
+ 
+-static ngx_conf_enum_t  ngx_stream_proxy_protocol_versions[] = {
+-    { ngx_string("off"), 0 },
+-    { ngx_string("on"), 1 },
+-    { ngx_string("v2"), 2 },
+-    { ngx_null_string, 0 }
+-};
+-
+-
+ static ngx_command_t  ngx_stream_proxy_commands[] = {
+ 
+     { ngx_string("proxy_pass"),
+@@ -276,10 +271,10 @@
+ 
+     { ngx_string("proxy_protocol"),
+       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+-      ngx_conf_set_enum_slot,
++      ngx_stream_proxy_protocol,
+       NGX_STREAM_SRV_CONF_OFFSET,
+-      offsetof(ngx_stream_proxy_srv_conf_t, proxy_protocol),
+-      &ngx_stream_proxy_protocol_versions },
++      0,
++      NULL },
+ 
+     { ngx_string("proxy_half_close"),
+       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_FLAG,
+@@ -768,7 +763,61 @@
+     u = s->upstream;
+ 
+     u->connected = 0;
+-    u->proxy_protocol = pscf->proxy_protocol;
++
++    /*
++     * 每个客户端会话只解析一次 PP 策略（含变量），缓存到 upstream 对象；
++     * proxy_next_upstream 重试时直接复用，避免重复求值，也不改共享的 pscf。
++     */
++    if (!u->proxy_protocol_resolved) {
++        u->proxy_protocol_mode = pscf->proxy_protocol;
++
++        if (pscf->proxy_protocol_var) {
++            ngx_str_t  val;
++
++            if (ngx_stream_complex_value(s, pscf->proxy_protocol_var, &val)
++                != NGX_OK)
++            {
++                ngx_log_error(NGX_LOG_ERR, c->log, 0,
++                              "failed to evaluate proxy_protocol variable");
++                ngx_stream_proxy_finalize(s,
++                                          NGX_STREAM_INTERNAL_SERVER_ERROR);
++                return;
++            }
++
++            if (val.len == 2
++                && ngx_strncasecmp(val.data, (u_char *) "v2", 2) == 0)
++            {
++                u->proxy_protocol_mode = 2;
++
++            } else if (val.len == 2
++                       && ngx_strncasecmp(val.data, (u_char *) "on", 2) == 0)
++            {
++                u->proxy_protocol_mode = 1;
++
++            } else if (val.len == 2
++                       && ngx_strncasecmp(val.data, (u_char *) "v1", 2) == 0)
++            {
++                u->proxy_protocol_mode = 1;
++
++            } else if (val.len == 3
++                       && ngx_strncasecmp(val.data, (u_char *) "off", 3) == 0)
++            {
++                u->proxy_protocol_mode = 0;
++
++            } else {
++                ngx_log_error(NGX_LOG_ERR, c->log, 0,
++                              "invalid proxy_protocol value \"%V\" "
++                              "(expected on|v1|v2|off)", &val);
++                ngx_stream_proxy_finalize(s,
++                                          NGX_STREAM_INTERNAL_SERVER_ERROR);
++                return;
++            }
++        }
++
++        u->proxy_protocol_resolved = 1;
++    }
++
++    u->proxy_protocol = u->proxy_protocol_mode;
+ 
+     if (u->state) {
+         u->state->response_time = ngx_current_msec - u->start_time;
+@@ -2428,6 +2477,7 @@
+     conf->next_upstream_tries = NGX_CONF_UNSET_UINT;
+     conf->next_upstream = NGX_CONF_UNSET;
+     conf->proxy_protocol = NGX_CONF_UNSET_UINT;
++    conf->proxy_protocol_var = NGX_CONF_UNSET_PTR;
+     conf->local = NGX_CONF_UNSET_PTR;
+     conf->socket_keepalive = NGX_CONF_UNSET;
+     conf->socket_rcvbuf = NGX_CONF_UNSET_SIZE;
+@@ -2454,6 +2504,74 @@
+ 
+ 
+ static char *
++ngx_stream_proxy_protocol(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
++{
++    ngx_stream_proxy_srv_conf_t *pscf = conf;
++
++    ngx_str_t                            *value;
++    ngx_stream_compile_complex_value_t    ccv;
++
++    if (pscf->proxy_protocol != NGX_CONF_UNSET_UINT
++        || pscf->proxy_protocol_var != NGX_CONF_UNSET_PTR)
++    {
++        return "is duplicate";
++    }
++
++    value = cf->args->elts;
++
++    if (ngx_strcasecmp(value[1].data, (u_char *) "off") == 0) {
++        pscf->proxy_protocol = 0;
++        pscf->proxy_protocol_var = NULL;
++        return NGX_CONF_OK;
++    }
++
++    if (ngx_strcasecmp(value[1].data, (u_char *) "on") == 0
++        || ngx_strcasecmp(value[1].data, (u_char *) "v1") == 0)
++    {
++        pscf->proxy_protocol = 1;
++        pscf->proxy_protocol_var = NULL;
++        return NGX_CONF_OK;
++    }
++
++    if (ngx_strcasecmp(value[1].data, (u_char *) "v2") == 0) {
++        pscf->proxy_protocol = 2;
++        pscf->proxy_protocol_var = NULL;
++        return NGX_CONF_OK;
++    }
++
++    /*
++     * 静态值（不含变量）必须在上面的白名单里，配置阶段就报错；
++     * 否则 nginx -t 会通过，直到第一个连接才失败。
++     */
++    if (ngx_strlchr(value[1].data, value[1].data + value[1].len, '$')
++        == NULL)
++    {
++        return "invalid value";
++    }
++
++    pscf->proxy_protocol_var = ngx_pcalloc(cf->pool,
++                                           sizeof(ngx_stream_complex_value_t));
++    if (pscf->proxy_protocol_var == NULL) {
++        return NGX_CONF_ERROR;
++    }
++
++    ngx_memzero(&ccv, sizeof(ngx_stream_compile_complex_value_t));
++
++    ccv.cf = cf;
++    ccv.value = &value[1];
++    ccv.complex_value = pscf->proxy_protocol_var;
++
++    if (ngx_stream_compile_complex_value(&ccv) != NGX_OK) {
++        return NGX_CONF_ERROR;
++    }
++
++    pscf->proxy_protocol = 0;
++
++    return NGX_CONF_OK;
++}
++
++
++static char *
+ ngx_stream_proxy_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
+ {
+     ngx_stream_proxy_srv_conf_t *prev = parent;
+@@ -2488,6 +2606,9 @@
+ 
+     ngx_conf_merge_uint_value(conf->proxy_protocol, prev->proxy_protocol, 0);
+ 
++    ngx_conf_merge_ptr_value(conf->proxy_protocol_var,
++                              prev->proxy_protocol_var, NULL);
++
+     ngx_conf_merge_ptr_value(conf->local, prev->local, NULL);
+ 
+     ngx_conf_merge_value(conf->socket_keepalive,

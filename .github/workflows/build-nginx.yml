@@ -188,6 +188,14 @@ jobs:
           MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs \
             bash /workspace/scripts/ci-build.sh /workspace $VERSION ${{ matrix.suffix }} tar.gz"
 
+      - name: Smoke test (stream pp-var)
+        if: matrix.os == 'centos7' && matrix.arch == 'amd64'
+        run: |
+          VERSION=${{ needs.check-version.outputs.new_version }}
+          BIN="$PWD/work/nginx-$VERSION/objs/nginx"
+          test -x "$BIN" || { echo "::error::binary missing: $BIN"; exit 1; }
+          ./tests/stream_pp_var.sh "$BIN"
+
       - name: Build with Docker (Alpine)
         if: matrix.use-docker && matrix.os == 'alpine'
         env:
