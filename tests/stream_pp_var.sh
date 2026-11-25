@@ -241,7 +241,7 @@ if ! ( cd "${LUA_DIR:-$PWD}" && "$NGINX_BIN" -p "$TMP" -c conf/nginx.conf ); the
 fi
 wait_listen "$P_V2" || { echo "!! nginx 未监听 $P_V2" >&2; tail -20 "$TMP/logs/error.log" >&2 2>/dev/null; exit 1; }
 
-echo "[smoke] nginx ready, running clients"
+echo "[smoke] nginx ready, running clients (workers=$(ps -eo args 2>/dev/null | grep -c '[n]ginx: worker'))"
 python3 - "$P_V2" "$P_V1" "$P_OFF" "$P_LON" "$P_LV2" "$P_RETRY" <<'PY'
 import socket, sys, time
 marker = b"ngx-pp-var-smoke"
@@ -309,13 +309,24 @@ python3 - "$TMP" "$STREAM_SSL" <<'PY'
 import sys, os, time
 tmp = sys.argv[1]
 stream_ssl = sys.argv[2] == "1"
+def dump_log():
+    p = os.path.join(tmp, "logs", "error.log")
+    try:
+        data = open(p, "rb").read().decode("utf-8", "replace")
+    except Exception:
+        return
+    print("--- nginx error.log (tail) ---", file=sys.stderr)
+    print("\n".join(data.strip().splitlines()[-25:]), file=sys.stderr)
+
 def wait_read(name):
     path = os.path.join(tmp, name)
-    for _ in range(50):
+    for _ in range(80):
         if os.path.exists(path) and os.path.getsize(path) > 0:
             return open(path, "rb").read()
         time.sleep(0.1)
-    raise SystemExit(f"!! 后端未收到数据: {name}")
+    print(f"!! 后端未收到数据: {name}", file=sys.stderr)
+    dump_log()
+    raise SystemExit(1)
 
 v2 = wait_read("out_v2.bin")
 v1 = wait_read("out_v1.bin")

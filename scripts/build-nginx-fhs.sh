@@ -306,12 +306,15 @@ echo "   #   access_by_lua_file $LUA_ROOT/waf/access.lua;"
 
 # ---------- 功能冒烟 (stream pp-var) ----------
 # 只做“编译过”不够：补丁打歪时 nginx -t 仍可能通过，必须抓后端首包验证。
-# 依赖 python3；构建容器若没有 python3 会自动跳过（CI 宿主机另跑 tests/stream_pp_var.sh）。
-if [ "${RUN_SMOKE_TESTS:-1}" = "1" ] && [ -x "$ROOT/tests/stream_pp_var.sh" ]; then
+# 但打包产物的 nginx 带 lua/mimalloc 等大量模块，在 CI runner 上未必能启动
+# （与补丁无关），所以默认不在打包流程里跑；改由 build-nginx.yml 的
+# smoke-patch 任务用最小构建（仅 stream）跑同一套断言。
+# 需要本地对产物做冒烟时显式 RUN_SMOKE_TESTS=1。
+if [ "${RUN_SMOKE_TESTS:-0}" = "1" ] && [ -x "$ROOT/tests/stream_pp_var.sh" ]; then
   if command -v python3 >/dev/null 2>&1; then
     echo "==> 冒烟测试: stream proxy_protocol 变量"
     "$ROOT/tests/stream_pp_var.sh" "$SRC/objs/nginx"
   else
-    echo "==> 跳过冒烟测试 (无 python3，请在 CI runner 上单独执行 tests/stream_pp_var.sh)"
+    echo "==> 跳过冒烟测试 (无 python3)"
   fi
 fi

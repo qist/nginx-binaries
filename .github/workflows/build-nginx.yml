@@ -188,14 +188,6 @@ jobs:
           MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs \
             bash /workspace/scripts/ci-build.sh /workspace $VERSION ${{ matrix.suffix }} tar.gz"
 
-      - name: Smoke test (stream pp-var)
-        if: matrix.os == 'centos7' && matrix.arch == 'amd64'
-        run: |
-          VERSION=${{ needs.check-version.outputs.new_version }}
-          BIN="$PWD/work/nginx-$VERSION/objs/nginx"
-          test -x "$BIN" || { echo "::error::binary missing: $BIN"; exit 1; }
-          ./tests/stream_pp_var.sh "$BIN"
-
       - name: Build with Docker (Alpine)
         if: matrix.use-docker && matrix.os == 'alpine'
         env:
@@ -344,9 +336,36 @@ jobs:
           name: nginx_${{ needs.check-version.outputs.new_version }}_${{ matrix.suffix }}
           path: nginx_${{ needs.check-version.outputs.new_version }}_${{ matrix.suffix }}.*
 
+  # ── 补丁功能冒烟：用最小构建（仅 stream）验证 proxy_protocol 变量 ----------
+  # 打包产物带 lua/mimalloc 等大量模块，在 runner 上未必能启动（与补丁无关），
+  # 因此这里单独从同一份源码+同一个补丁编译一个最小 nginx 做端到端断言：
+  #   v2 / v1 / off、字面量、next_upstream 重试缓存、SNI map、proxy_ssl 顺序、非法值。
+  smoke-patch:
+    name: Smoke test (stream pp-var patch)
+    needs: check-version
+    if: needs.check-version.outputs.should_build == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build minimal nginx with patch
+        run: |
+          set -eux
+          VERSION=${{ needs.check-version.outputs.new_version }}
+          curl -fsSL -o nginx.tar.gz "https://nginx.org/download/nginx-$VERSION.tar.gz"
+          tar xzf nginx.tar.gz
+          bash scripts/apply-nginx-patches.sh "nginx-$VERSION" "$VERSION"
+          cd "nginx-$VERSION"
+          ./configure --prefix="$PWD/../run" \
+            --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module \
+            --without-http_rewrite_module --without-http_gzip_module
+          make -j"$(nproc)"
+          ../tests/stream_pp_var.sh "$PWD/objs/nginx"
+
   release:
     name: Create Release
-    needs: [check-version, build]
+    needs: [check-version, build, smoke-patch]
     if: needs.check-version.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     steps:
