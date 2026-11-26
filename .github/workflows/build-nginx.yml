@@ -272,8 +272,11 @@ jobs:
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
 
-          # 构建 LuaJIT (openresty fork 无 msysbuild.bat, 用 src/Makefile 显式 Windows 目标;
-          # 产 src/lua51.dll + liblua51.a + lua.exe)
+          # 构建 LuaJIT (openresty fork 无 msysbuild.bat, 用 src/Makefile 显式 Windows 目标)
+          # Windows 分支的 GIT_RELVER 是 cmd 语法, msys2 的 make 走 sh 会报语法错:
+          # 替换为 no-op 并预先用 git 生成 luajit_relver.txt 供 genversion.lua 读取
+          sed -i 's|GIT_RELVER= if exist .*|GIT_RELVER= :|' luajit2/src/Makefile
+          git -C luajit2 show -s --format=%ct > luajit2/src/luajit_relver.txt
           echo "==> 构建 LuaJIT (mingw)"
           make -C luajit2/src -j"$(nproc)" \
             CC=gcc HOST_CC=gcc TARGET_SYS=Windows HOST_SYS=Windows
