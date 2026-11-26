@@ -302,9 +302,16 @@ jobs:
           # 替换为 no-op 并预先用 git 生成 luajit_relver.txt 供 genversion.lua 读取
           sed -i 's|GIT_RELVER= if exist .*|GIT_RELVER= :|' luajit2/src/Makefile
           git -C luajit2 show -s --format=%ct > luajit2/src/luajit_relver.txt
-          echo "==> 构建 LuaJIT (mingw)"
+          echo "==> 构建 LuaJIT (mingw, 静态)"
           make -C luajit2/src -j"$(nproc)" \
-            CC=gcc HOST_CC=gcc TARGET_SYS=Windows HOST_SYS=Windows
+            CC=gcc HOST_CC=gcc TARGET_SYS=Windows HOST_SYS=Windows BUILDMODE=static
+          # 统一静态库名为 liblua51.a (mingw 下产物可能叫 lua51.lib / libluajit-5.1.a),
+          # 保证 lua-nginx-module 的 -llua51 feature test 命中静态库
+          # (其 win32 检查是运行型测试, 链动态 lua51.dll 会因 DLL 不在路径而 not found)
+          for f in luajit2/src/liblua51.a luajit2/src/lua51.lib luajit2/src/libluajit-5.1.a luajit2/src/libluajit.a; do
+            [ -f "$f" ] && cp -f "$f" luajit2/src/liblua51.a && break
+          done
+          ls luajit2/src/*.a luajit2/src/*.lib 2>/dev/null || true
 
           # 构建 brotli (ngx_brotli 内嵌 submodule, 静态链接;
           # ngx_brotli 的 config 会自动从 deps/brotli/out/installed 找头文件与静态库)
@@ -406,7 +413,7 @@ jobs:
           cp -r lua /tmp/nginx/lua
           mkdir -p /tmp/nginx/luajit-share/lua/5.1
           cp -r luajit2/src/jit /tmp/nginx/luajit-share/lua/5.1/jit
-          cp luajit2/src/lua51.dll /tmp/nginx/lua51.dll
+          [ -f luajit2/src/lua51.dll ] && cp luajit2/src/lua51.dll /tmp/nginx/lua51.dll || true
           cp config/nginx.quic.lua.conf /tmp/nginx/conf/nginx.quic.lua.conf 2>/dev/null || true
           ls /tmp/nginx/
           cd /tmp
