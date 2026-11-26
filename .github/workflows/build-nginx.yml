@@ -322,7 +322,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=out/installed
           cmake --build out -j"$(nproc)"
           cmake --install out
-          cd ../..
+          cd ../../..
 
           # 纯 lua 生态 (resty-*/dkjson/cjson 垫片/socket 桥/waf, 与 Linux 包同一脚本)
           bash scripts/install-lua-ecosystem.sh "$PWD/lua"
