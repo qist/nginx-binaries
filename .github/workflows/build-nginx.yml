@@ -411,6 +411,15 @@ jobs:
            mkdir -p /tmp/nginx
           if [ -f objs/nginx.exe ]; then
             \cp objs/nginx.exe /tmp/nginx/nginx.exe
+            # nginx.exe 动态依赖 UCRT64 的 libbrotli*/libiconv/libxml2 等 DLL,
+            # 不随包分发的话, 在未安装 MSYS2 的 Windows 上会 0xc0000135 启动失败。
+            # 先用 ldd 抓全部 /ucrt64/bin 下的传递依赖, 再按已知家族兜底。
+            ldd /tmp/nginx/nginx.exe 2>/dev/null | awk '{print $3}' | grep '^/ucrt64/bin/' | while read -r dll; do
+              \cp -f "$dll" /tmp/nginx/
+            done
+            \cp -f /ucrt64/bin/libbrotli*.dll /ucrt64/bin/libiconv-*.dll /ucrt64/bin/libxml2-*.dll /tmp/nginx/ 2>/dev/null || true
+            echo "--- 随包 DLL ---"
+            ls /tmp/nginx/*.dll 2>/dev/null || echo "(未找到)"
           fi
            \cp -pdr conf /tmp/nginx/
            \cp -pdr docs/html /tmp/nginx/
