@@ -392,7 +392,13 @@ jobs:
             --add-module=../lua-nginx-module \
             --add-module=../stream-lua-nginx-module \
             --add-module=../lua-upstream-nginx-module \
-            --add-module=../ngx_brotli
+            --add-module=../ngx_brotli \
+            || {
+              echo "!! configure 失败, 输出 feature 测试详情 (objs/autoconf.err)"
+              cat nginx/objs/autoconf.err 2>/dev/null | tail -60
+              ls nginx/objs/ 2>/dev/null
+              exit 1
+            }
           mingw32-make -j$(nproc)
           # mingw32-make install
           # 修复 Windows 可执行文件扩展名
