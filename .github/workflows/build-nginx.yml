@@ -331,6 +331,13 @@ jobs:
           ./autogen.sh
           cd ../nginx
           export LUAJIT_LIB=../luajit2/src LUAJIT_INC=../luajit2/src
+          # 三方库全静态: 删掉 MSYS2 的导入库, 让 -liconv / -lxml2 命中 .a,
+          # 否则 nginx.exe 会依赖 libiconv-2.dll / libxml2-16.dll / libbrotli*.dll
+          rm -f /ucrt64/lib/libiconv.dll.a /ucrt64/lib/libxml2.dll.a
+          find ../ngx_brotli/deps/brotli/out -maxdepth 1 -name '*.dll.a' -delete
+          # dav-ext 默认 ngx_module_libs=LIBXSLT, 会展开成 -lxml2 -lxslt -lexslt;
+          # 静态 libxml2.a 还依赖 zlib(gz*) 与 iconv, 必须排在 -lxml2 之后才不会被丢掉
+          sed -i 's|^ngx_module_libs=.*|ngx_module_libs="-lxml2 ../zlib/libz.a -liconv"|' ../nginx-dav-ext-module/config
           # mingw32-make 是原生 Windows 程序, spawn gcc 时不走 MSYS 路径转换,
           # cc/ld-opt 里的 /ucrt64 会被解析成当前盘符根, 必须显式转 Windows 路径
           UCRT_WIN="$(cygpath -m /ucrt64)"
@@ -411,9 +418,8 @@ jobs:
            mkdir -p /tmp/nginx
           if [ -f objs/nginx.exe ]; then
             \cp objs/nginx.exe /tmp/nginx/nginx.exe
-            # nginx.exe 动态依赖 UCRT64 的 libbrotli*/libiconv/libxml2 等 DLL,
-            # 不随包分发的话, 在未安装 MSYS2 的 Windows 上会 0xc0000135 启动失败。
-            # 先用 ldd 抓全部 /ucrt64/bin 下的传递依赖, 再按已知家族兜底。
+            # 兜底: 三方库已改为静态链接, 正常情况下这里不会有 UCRT64 DLL;
+            # 若某个依赖重新变成动态, 仍随包带上以免 0xc0000135 启动失败。
             ldd /tmp/nginx/nginx.exe 2>/dev/null | awk '{print $3}' | grep '^/ucrt64/bin/' | while read -r dll; do
               \cp -f "$dll" /tmp/nginx/
             done
