@@ -336,8 +336,8 @@ jobs:
           rm -f /ucrt64/lib/libiconv.dll.a /ucrt64/lib/libxml2.dll.a
           find ../ngx_brotli/deps/brotli/out -maxdepth 1 -name '*.dll.a' -delete
           # dav-ext 默认 ngx_module_libs=LIBXSLT, 会展开成 -lxml2 -lxslt -lexslt;
-          # 静态 libxml2.a 还依赖 zlib(gz*) 与 iconv, 必须排在 -lxml2 之后才不会被丢掉
-          sed -i 's|^ngx_module_libs=.*|ngx_module_libs="-lxml2 ../zlib/libz.a -liconv"|' ../nginx-dav-ext-module/config
+          # 静态 libxml2.a 还依赖 zlib(gz*)、iconv 与 Windows BCryptGenRandom, 必须排在其后
+          sed -i 's|^ngx_module_libs=.*|ngx_module_libs="-lxml2 ../zlib/libz.a -liconv -lbcrypt"|' ../nginx-dav-ext-module/config
           # libxml2 头文件在 Windows 默认把函数声明成 dllimport, 静态链接会找 __imp_ 符号;
           # 必须定义 LIBXML_STATIC 让其退化为普通声明 (等价 xml2-config --static 的 -DLIBXML_STATIC)
           # mingw32-make 是原生 Windows 程序, spawn gcc 时不走 MSYS 路径转换,
