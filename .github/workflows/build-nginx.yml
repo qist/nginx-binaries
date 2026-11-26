@@ -268,9 +268,10 @@ jobs:
           git clone --depth=1 https://github.com/openresty/lua-upstream-nginx-module.git
           git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
           # 与 Linux 构建对齐的其余外部模块
-          git clone --depth=1 https://github.com/xiaokai-wang/nginx_upstream_check_module.git
+          # 注: nginx_upstream_check_module 与 nginx-upsync-module 深度依赖 POSIX API
+          # (srandom/S_IRUSR/lseek/ftruncate/裸 send), mingw 下无法编译, 不进 Windows 包;
+          # 对应的 check 核心 patch 也只在 Linux 需要
           git clone --depth=1 https://github.com/FRiCKLE/ngx_cache_purge.git
-          git clone --depth=1 https://github.com/weibocom/nginx-upsync-module.git
           git clone --depth=1 https://github.com/openresty/echo-nginx-module.git
           git clone --depth=1 https://github.com/evanmiller/mod_zip.git
           git clone --depth=1 https://github.com/GUI/nginx-upstream-dynamic-servers.git
@@ -278,22 +279,6 @@ jobs:
           git clone --depth=1 https://github.com/vozlt/nginx-module-sts.git
           git clone --depth=1 https://github.com/vozlt/nginx-module-stream-sts.git
           git clone --depth=1 https://github.com/arut/nginx-dav-ext-module.git
-
-          # nginx_upstream_check 核心 patch (注入 ngx_http_upstream_check_add/
-          # delete_dynamic_peer 符号与 check_index 字段, upsync 依赖), 逻辑与
-          # Linux build-nginx*.sh 相同: 幂等判据看 header 是否含 check_index
-          # (必须在模块 clone 之后执行, patch 文件来自 nginx_upstream_check_module)
-          RR_H=nginx/src/http/ngx_http_upstream_round_robin.h
-          if grep -q "check_index" "$RR_H" 2>/dev/null; then
-            echo "==> nginx_upstream_check patch 已应用 (header 含 check_index), 跳过"
-          else
-            echo "==> 应用 nginx_upstream_check patch"
-            patch -d nginx -p1 < nginx_upstream_check_module/check_1.20.1+.patch \
-              || patch -d nginx -p1 --fuzz=5 < nginx_upstream_check_module/check_1.20.1+.patch
-            grep -q "check_index" "$RR_H" \
-              || { echo "!! check_index 注入失败, upsync 将无法链接"; exit 1; }
-            echo "==> check_index 注入成功"
-          fi
 
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -382,9 +367,7 @@ jobs:
             --add-module=../nginx-http-auth-digest \
             --add-module=../headers-more-nginx-module \
             --add-module=../ngx-fancyindex \
-            --add-module=../nginx_upstream_check_module \
             --add-module=../ngx_cache_purge \
-            --add-module=../nginx-upsync-module \
             --add-module=../echo-nginx-module \
             --add-module=../mod_zip \
             --add-module=../nginx-upstream-dynamic-servers \
