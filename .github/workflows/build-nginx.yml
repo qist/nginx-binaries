@@ -394,9 +394,11 @@ jobs:
             --add-module=../lua-upstream-nginx-module \
             --add-module=../ngx_brotli \
             || {
-              echo "!! configure 失败, 输出 feature 测试详情 (objs/autoconf.err)"
-              cat nginx/objs/autoconf.err 2>/dev/null | tail -60
-              ls nginx/objs/ 2>/dev/null
+              # 注意: 此处 cwd 已是 nginx/, autoconf.err 在 objs/ 下 (勿再加 nginx/ 前缀)
+              echo "!! configure 失败, 输出 objs/autoconf.err 尾部"
+              tail -100 objs/autoconf.err 2>/dev/null || echo "(autoconf.err 不存在)"
+              echo "--- luajit 产物 ---"
+              ls -l ../luajit2/src/*.a ../luajit2/src/*.lib ../luajit2/src/*.dll 2>/dev/null || true
               exit 1
             }
           mingw32-make -j$(nproc)
