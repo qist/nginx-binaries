@@ -272,9 +272,11 @@ jobs:
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
 
-          # 构建 LuaJIT (官方 MinGW 目标, 产 src/lua51.dll + 导入库)
+          # 构建 LuaJIT (openresty fork 无 msysbuild.bat, 用 src/Makefile 显式 Windows 目标;
+          # 产 src/lua51.dll + liblua51.a + lua.exe)
           echo "==> 构建 LuaJIT (mingw)"
-          make -C luajit2 mingw -j"$(nproc)"
+          make -C luajit2/src -j"$(nproc)" \
+            CC=gcc HOST_CC=gcc TARGET_SYS=Windows HOST_SYS=Windows
 
           # 纯 lua 生态 (resty-*/dkjson/cjson 垫片/socket 桥/waf, 与 Linux 包同一脚本)
           bash scripts/install-lua-ecosystem.sh "$PWD/lua"

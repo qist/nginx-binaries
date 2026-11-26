@@ -92,8 +92,18 @@ prep_openssl() {
     return
   fi
   echo "==> [1] 克隆官方 OpenSSL $OPENSSL_VER (原生 QUIC + 后量子混合组)"
-  rm -rf "$ROOT/openssl-src"
-  git clone --depth=1 --branch "openssl-$OPENSSL_VER" "$OPENSSL_REPO" "$ROOT/openssl-src"
+  # 大仓库直连偶发网络抖动 (Unexpected end of command stream), 自动重试 3 次
+  local n=0
+  while :; do
+    rm -rf "$ROOT/openssl-src"
+    if git clone --depth=1 --branch "openssl-$OPENSSL_VER" "$OPENSSL_REPO" "$ROOT/openssl-src"; then
+      break
+    fi
+    n=$((n+1))
+    [ "$n" -ge 3 ] && { echo "!! openssl 克隆连续 3 次失败, 中止"; return 1; }
+    echo "!! openssl 克隆失败, 重试 $n/3 ..."
+    sleep 5
+  done
   mv "$ROOT/openssl-src" "$ROOT/openssl-$OPENSSL_VER"
   echo "    版本: $($ROOT/openssl-$OPENSSL_VER/VERSION.dat 2>/dev/null | grep -E '^VERSION=' | cut -d= -f2)"
 }
