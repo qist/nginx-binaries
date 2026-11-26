@@ -262,6 +262,10 @@ jobs:
           # Lua 支持: LuaJIT (mingw 构建) + lua-nginx-module; 生态为纯 lua 文件拷贝
           git clone --depth=1 https://github.com/openresty/luajit2.git
           git clone --depth=1 https://github.com/openresty/lua-nginx-module.git
+          # 与 Linux 构建对齐的额外模块: stream Lua + upstream API + brotli
+          git clone --depth=1 https://github.com/openresty/stream-lua-nginx-module.git
+          git clone --depth=1 https://github.com/openresty/lua-upstream-nginx-module.git
+          git clone --depth=1 --recursive https://github.com/google/ngx_brotli.git
 
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -280,6 +284,18 @@ jobs:
           echo "==> 构建 LuaJIT (mingw)"
           make -C luajit2/src -j"$(nproc)" \
             CC=gcc HOST_CC=gcc TARGET_SYS=Windows HOST_SYS=Windows
+
+          # 构建 brotli (ngx_brotli 内嵌 submodule, 静态链接;
+          # ngx_brotli 的 config 会自动从 deps/brotli/out/installed 找头文件与静态库)
+          echo "==> 构建 brotli (静态)"
+          cd ngx_brotli/deps/brotli
+          rm -rf out
+          cmake -S . -B out -G "MinGW Makefiles" \
+            -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_INSTALL_PREFIX=out/installed
+          cmake --build out -j"$(nproc)"
+          cmake --install out
+          cd ../..
 
           # 纯 lua 生态 (resty-*/dkjson/cjson 垫片/socket 桥/waf, 与 Linux 包同一脚本)
           bash scripts/install-lua-ecosystem.sh "$PWD/lua"
@@ -338,7 +354,10 @@ jobs:
             --add-module=../nginx-http-auth-digest \
             --add-module=../headers-more-nginx-module \
             --add-module=../ngx-fancyindex \
-            --add-module=../lua-nginx-module
+            --add-module=../lua-nginx-module \
+            --add-module=../stream-lua-nginx-module \
+            --add-module=../lua-upstream-nginx-module \
+            --add-module=../ngx_brotli
           mingw32-make -j$(nproc)
           # mingw32-make install
           # 修复 Windows 可执行文件扩展名
