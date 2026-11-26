@@ -331,9 +331,10 @@ jobs:
           ./autogen.sh
           cd ../nginx
           export LUAJIT_LIB=../luajit2/src LUAJIT_INC=../luajit2/src
-          # 三方库全静态: 删掉 MSYS2 的导入库, 让 -liconv / -lxml2 命中 .a,
+          # 三方库全静态: 删掉 MSYS2 的导入库, 让 -liconv / -lxml2 / -lbrotli* 命中 .a,
           # 否则 nginx.exe 会依赖 libiconv-2.dll / libxml2-16.dll / libbrotli*.dll
-          rm -f /ucrt64/lib/libiconv.dll.a /ucrt64/lib/libxml2.dll.a
+          # (-L${UCRT_WIN}/lib 排在 ngx_brotli 的 out/ 之前, 不删就会优先选到系统导入库)
+          rm -f /ucrt64/lib/libiconv.dll.a /ucrt64/lib/libxml2.dll.a /ucrt64/lib/libbrotli*.dll.a
           find ../ngx_brotli/deps/brotli/out -maxdepth 1 -name '*.dll.a' -delete
           # dav-ext 默认 ngx_module_libs=LIBXSLT, 会展开成 -lxml2 -lxslt -lexslt;
           # 静态 libxml2.a 还依赖 zlib(gz*)、iconv 与 Windows BCryptGenRandom, 必须排在其后
@@ -420,14 +421,13 @@ jobs:
            mkdir -p /tmp/nginx
           if [ -f objs/nginx.exe ]; then
             \cp objs/nginx.exe /tmp/nginx/nginx.exe
-            # 兜底: 三方库已改为静态链接, 正常情况下这里不会有 UCRT64 DLL;
+            # 兜底: 三方库已改为静态链接, 正常情况下这里不应有 UCRT64 DLL;
             # 若某个依赖重新变成动态, 仍随包带上以免 0xc0000135 启动失败。
             ldd /tmp/nginx/nginx.exe 2>/dev/null | awk '{print $3}' | grep '^/ucrt64/bin/' | while read -r dll; do
               \cp -f "$dll" /tmp/nginx/
             done
-            \cp -f /ucrt64/bin/libbrotli*.dll /ucrt64/bin/libiconv-*.dll /ucrt64/bin/libxml2-*.dll /tmp/nginx/ 2>/dev/null || true
             echo "--- 随包 DLL ---"
-            ls /tmp/nginx/*.dll 2>/dev/null || echo "(未找到)"
+            ls /tmp/nginx/*.dll 2>/dev/null || echo "(无, 全部静态链接)"
           fi
            \cp -pdr conf /tmp/nginx/
            \cp -pdr docs/html /tmp/nginx/
