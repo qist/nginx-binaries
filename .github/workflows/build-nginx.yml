@@ -374,7 +374,10 @@ jobs:
             --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../openssl \
             --with-openssl-opt='no-asm no-tests -D_WIN32_WINNT=0x0501' \
-            --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768 -DNGX_STREAM_PP_VAR -Wno-error=pointer-to-int-cast -Wno-error=int-to-pointer-cast -Wno-error=pointer-sign -Wno-error=unused-value -Wno-error=macro-redefined" \
+            # Windows (LLP64 + 第三方模块) 平台告警多, 末尾 -Wno-error 统一降级为警告;
+            # 注意勿写 -Wno-error=macro-redefined: GCC 无 -Wmacro-redefined, cc1 会直接报错
+            # (会让 configure 的所有 feature 测试失败, 表现为 LuaJIT/iconv not found)
+            --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768 -DNGX_STREAM_PP_VAR -Wno-error=pointer-to-int-cast -Wno-error=int-to-pointer-cast -Wno-error=pointer-sign -Wno-error=unused-value -Wno-error" \
             --with-ld-opt="-L/ucrt64/lib" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
