@@ -59,7 +59,7 @@ source /opt/rh/devtoolset-9/enable
 export CC=gcc CXX=g++
 export MODULE_ROOT=/workspace LIBS_PREFIX=/workspace/libs WORK=/workspace/work
 NGINX_VER="${NGINX_VER:-1.31.3}"
-OPENSSL_VER="${OPENSSL_VER:-3.6.3}"
+OPENSSL_VER="${OPENSSL_VER:-3.5.9}"
 export NGINX_VER OPENSSL_VER
 
 # 清理宿主挂载目录里残留的裸机构建产物(含写死旧绝对路径的 Makefile/configdata)

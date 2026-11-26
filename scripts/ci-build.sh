@@ -42,15 +42,36 @@ gh_latest_tag() {
       | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
   fi
 }
+# 取仓库 releases 中 tag 前缀为 $2 的最新正式版本 (排除 beta/alpha/rc;
+# releases 按时间倒序, 目标分支的 patch release 必在第一页 100 条内)
+gh_latest_series_tag() {
+  local REPO="$1" PREFIX="$2" JSON
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    JSON=$(curl -fsSL --retry 3 --connect-timeout 10 \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      "https://api.github.com/repos/$REPO/releases?per_page=100")
+  else
+    JSON=$(curl -fsSL --retry 3 --connect-timeout 10 \
+      "https://api.github.com/repos/$REPO/releases?per_page=100")
+  fi
+  printf '%s\n' "$JSON" \
+    | sed -n "s/.*\"tag_name\":[[:space:]]*\"\(${PREFIX}[0-9][0-9]*\)\".*/\1/p" | head -1
+}
 if [ -z "$VER" ] || [ "$VER" = "latest" ]; then
   TAG="$(gh_latest_tag nginx/nginx)"
   VER="${TAG#release-}"
 fi
 [ -n "$VER" ] || { echo "!! 无法获取 nginx 最新 release, 可显式传入版本号"; exit 1; }
 if [ -z "${OPENSSL_VER:-}" ] || [ "${OPENSSL_VER:-}" = "latest" ]; then
-  # CVE-2026-121481: latest=openssl-4.1.0 在受影响区间 (修复版 4.0.4/4.1.1 尚未发布),
-  # 3.x 不受影响; 3.6 系列 EOL -> 锁定 3.5 LTS 最新 3.5.9; 4.1.1 发布后恢复跟随 latest
-  OPENSSL_VER="3.5.9"
+  # OpenSSL 版本策略: 跟随 3.5 LTS 分支最新 patch 自动累加 (LTS 支持到 2030-04)。
+  #   3.5.10 发布后无需改码自动跟进 (含 2026-11 批次 QUIC/低危 CVE 修复);
+  #   4.x 不跟随: 4.0.x/4.1.0 处于 CVE-2026-121481 受影响区间, 3.6 系列 EOL。
+  #   显式 export OPENSSL_VER=x.y.z 可指定其它版本。
+  OPENSSL_VER="$(gh_latest_series_tag openssl/openssl openssl-3.5.)"
+  if [ -z "$OPENSSL_VER" ]; then
+    OPENSSL_VER="3.5.9"   # API 异常兜底: 已知良好 LTS 版本
+    echo "!! openssl LTS 版本解析失败, 兜底使用 3.5.9"
+  fi
 fi
 [ -n "$OPENSSL_VER" ] || { echo "!! 无法获取 openssl 最新 release, 可显式 export OPENSSL_VER=x.y.z"; exit 1; }
 echo "==> [ci-build] 版本解析: nginx=$VER openssl=$OPENSSL_VER"

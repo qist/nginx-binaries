@@ -243,9 +243,13 @@ jobs:
           VERSION=${{ needs.check-version.outputs.new_version }}
           # 创建 mingw32-make 的别名 make
           ln -sf /ucrt64/bin/mingw32-make.exe /ucrt64/bin/make.exe
-          # openssl 锁定 3.5.9 LTS: CVE-2026-121481 影响 4.0.x/4.1.0 (latest 解析结果),
-          # 修复版 4.0.4/4.1.1 尚未发布; 3.6 系列 EOL; 4.1.1 发布后恢复跟随 latest
-          OPENSSL_TAG=openssl-3.5.9
+          # openssl 版本策略: 跟随 3.5 LTS 分支最新 patch 自动累加 (LTS 支持到 2030-04);
+          # 4.x 不跟随 (CVE-2026-121481 影响 4.0.x/4.1.0), 3.6 系列 EOL; API 异常兜底 3.5.9
+          OPENSSL_TAG=$(curl -fsSL --retry 3 \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/openssl/openssl/releases?per_page=100" \
+            | sed -n 's/.*"tag_name":[[:space:]]*"\(openssl-3\.5\.[0-9][0-9]*\)".*/\1/p' | head -1)
+          [ -n "$OPENSSL_TAG" ] || OPENSSL_TAG=openssl-3.5.9
           echo "==> Windows 构建 openssl: $OPENSSL_TAG"
           git clone --depth=1 --recursive -b "$OPENSSL_TAG" https://github.com/openssl/openssl.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git

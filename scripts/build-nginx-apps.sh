@@ -45,7 +45,7 @@ echo "==> 平台: $PLATFORM | NPROC=$NPROC"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="${WORK:-$ROOT/work}"
 NGINX_VER="${NGINX_VER:-1.31.9}"
-OPENSSL_VER="${OPENSSL_VER:-3.6.3}"
+OPENSSL_VER="${OPENSSL_VER:-3.5.9}"
 
 # 第三方模块源码所在根目录 (CI docker 内为 /workspace, 直编 / macos 为 $GITHUB_WORKSPACE, 本机为 $ROOT)
 MODULE_ROOT="${MODULE_ROOT:-$ROOT}"
