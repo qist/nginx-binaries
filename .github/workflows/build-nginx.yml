@@ -39,8 +39,8 @@ jobs:
           if [ -n "${{ github.event.inputs.version }}" ]; then
             LATEST_TAG="release-${{ github.event.inputs.version }}"
           else
-            # 使用 releases/latest API 获取最新稳定版本
-            LATEST_TAG=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
+            # 使用 releases/latest API 获取最新稳定版本 (带认证防共享出口 IP 匿名限流)
+            LATEST_TAG=$(curl -s --retry 3 --connect-timeout 10 -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
           fi
           
           if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
