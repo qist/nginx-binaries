@@ -48,29 +48,11 @@ MIMALLOC_VER="${MIMALLOC_VER:-v2.1.9}"
 LNM_REPO="https://github.com/openresty/lua-nginx-module.git"
 NDK_REPO="https://github.com/vision5/ngx_devel_kit.git"
 
-# 纯 lua resty 生态 (clone --depth=1 后复制 lib/ 进 lua root)
-RESTY_LIBS=(
-  "https://github.com/openresty/lua-resty-core.git"
-  "https://github.com/openresty/lua-resty-lrucache.git"
-  "https://github.com/openresty/lua-resty-memcached.git"
-  "https://github.com/openresty/lua-resty-mysql.git"
-  "https://github.com/openresty/lua-resty-redis.git"
-  "https://github.com/openresty/lua-resty-dns.git"
-  "https://github.com/openresty/lua-resty-upload.git"
-  "https://github.com/openresty/lua-resty-websocket.git"
-  "https://github.com/openresty/lua-resty-lock.git"
-  "https://github.com/cloudflare/lua-resty-logger-socket.git"
-  "https://github.com/openresty/lua-resty-string.git"
-  "https://github.com/cloudflare/lua-resty-cookie.git"
-  "https://github.com/ledgetech/lua-resty-http.git"
-  "https://github.com/api7/lua-resty-ipmatcher.git"
-  "https://github.com/ElvinEfendi/lua-resty-global-throttle.git"
-)
-DKJSON_REPO="https://github.com/LuaDist/dkjson.git"
-WAF_REPO="https://github.com/qist/nginxguard.git"
+# 纯 lua resty 生态清单已抽至 scripts/install-lua-ecosystem.sh (Linux/Windows 共用)
 
 # ---------- 路径 ----------
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORK="${WORK:-$ROOT/work}"
 
 # 代理: 默认 github.com 直连 (CI 假设 github 畅通, git clone 不绕代理)。
@@ -168,100 +150,6 @@ build_mimalloc() {
   echo "    mimalloc 静态库: $MIMALLOC_A"
 }
 
-# ---------- 4. 纯 lua 生态 ----------
-install_lua_ecosystem() {
-  echo "==> [4] 安装纯 lua 生态 (全部纯 lua, 无 C 扩展)"
-  mkdir -p "$LUA_ROOT/resty" "$LUA_ROOT/waf"
-  cd "$WORK"
-
-  # 4.1 resty-* 生态: 复制各仓库 lib/ 下的 lua 文件
-  for repo in "${RESTY_LIBS[@]}"; do
-    name="$(basename "$repo" .git)"
-    echo "    - $name"
-    rm -rf "$WORK/$name-tmp"
-    git clone --depth=1 "$repo" "$WORK/$name-tmp"
-    # resty 子目录
-    if [ -d "$WORK/$name-tmp/lib/resty" ]; then
-      cp -r "$WORK/$name-tmp/lib/resty/." "$LUA_ROOT/resty/" 2>/dev/null || true
-    fi
-    # 顶层 lua 文件 (如 lua-resty-core 的 resty/*.lua 已覆盖, 这里兜底)
-    if [ -d "$WORK/$name-tmp/lib" ]; then
-      cp -r "$WORK/$name-tmp/lib/." "$LUA_ROOT/" 2>/dev/null || true
-    fi
-    rm -rf "$WORK/$name-tmp"
-  done
-
-  # 4.2 dkjson (纯 lua JSON) + cjson 垫片 (满足 waf 的 require("cjson"))
-  echo "    - dkjson + cjson 垫片"
-  rm -rf "$WORK/dkjson-tmp"
-  git clone --depth=1 "$DKJSON_REPO" "$WORK/dkjson-tmp"
-  cp "$WORK/dkjson-tmp/dkjson.lua" "$LUA_ROOT/dkjson.lua"
-  cat > "$LUA_ROOT/cjson.lua" <<'LUA'
--- 纯 lua 的 cjson 兼容垫片, 内部用 dkjson 实现
--- 满足 waf 的 require("cjson") / cjson.encode / cjson.decode
-local dkjson = require("dkjson")
-local cjson = {}
-function cjson.encode(v)
-  return dkjson.encode(v, { indent = false })
-end
-function cjson.decode(s)
-  local ok, res = pcall(dkjson.decode, s, 1, nil)
-  if not ok then
-    error(res)
-  end
-  return res
-end
-return cjson
-LUA
-  rm -rf "$WORK/dkjson-tmp"
-
-  # 4.3 luasocket 纯 lua 占位 (在 nginx 内桥接 ngx.socket; 满足 require("socket"))
-  # 说明: luasocket 官方是 C 扩展, 此处不编译 C, 改为纯 lua 桥接 cosocket。
-  echo "    - luasocket 纯 lua 桥接"
-  cat > "$LUA_ROOT/socket.lua" <<'LUA'
--- 纯 lua 的 socket 兼容层 (不依赖 C 扩展)
--- 在 nginx 运行时桥接 ngx.socket.tcp()/udp(); 非 nginx 环境会明确报错。
-local socket = {}
-
-function socket.tcp()
-  if ngx and ngx.socket and ngx.socket.tcp then
-    return ngx.socket.tcp()
-  end
-  error("socket.tcp: 仅在 nginx/OpenResty 运行时可用 (cosocket)")
-end
-
-function socket.udp()
-  if ngx and ngx.socket and ngx.socket.udp then
-    return ngx.socket.udp()
-  end
-  error("socket.udp: 仅在 nginx/OpenResty 运行时可用 (cosocket)")
-end
-
-function socket.connect(host, port)
-  local s = socket.tcp()
-  local ok, err = s:connect(host, port)
-  if not ok then error(err) end
-  return s
-end
-
-return socket
-LUA
-
-  # 4.4 qist/waf 纯 lua 防火墙
-  echo "    - qist/waf"
-  rm -rf "$WORK/waf-tmp"
-  git clone --depth=1 "$WAF_REPO" "$WORK/waf-tmp"
-  # waf 顶层 lua 入口 (config.lua / lib.lua / init.lua / access.lua ...)
-  cp "$WORK/waf-tmp"/*.lua "$LUA_ROOT/waf/" 2>/dev/null || true
-  # 规则目录
-  if [ -d "$WORK/waf-tmp/rule-config" ]; then
-    cp -r "$WORK/waf-tmp/rule-config" "$LUA_ROOT/waf/rule-config"
-  fi
-  rm -rf "$WORK/waf-tmp"
-
-  echo "    lua 生态安装完成 -> $LUA_ROOT"
-}
-
 # ---------- 第三方 nginx 模块 ----------
 fetch_nginx_modules() {
   cd "$WORK"
@@ -280,14 +168,14 @@ case "${1:-all}" in
     prep_openssl
     build_luajit
     build_mimalloc
-    install_lua_ecosystem
+    bash "$SCRIPT_DIR/install-lua-ecosystem.sh" "$LUA_ROOT"
     fetch_nginx_modules
     echo "==> 依赖全部就绪"
     ;;
   openssl)   prep_openssl ;;
   luajit)    build_luajit ;;
   mimalloc)  build_mimalloc ;;
-  luavm)     install_lua_ecosystem ;;
+  luavm)     bash "$SCRIPT_DIR/install-lua-ecosystem.sh" "$LUA_ROOT" ;;
   modules)   fetch_nginx_modules ;;
   *)
     echo "用法: $0 [all|openssl|luajit|mimalloc|luavm|modules|clean]"

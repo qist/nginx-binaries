@@ -254,6 +254,15 @@ jobs:
           git clone --depth=1 --recursive -b "$OPENSSL_TAG" https://github.com/openssl/openssl.git
           git clone --depth=1 -b release-$VERSION https://github.com/nginx/nginx.git
 
+          # 应用 stream pp-var 补丁 (纯 C 平台无关; 行为由 Linux smoke-patch job 端到端覆盖)
+          patch -p1 --fuzz=0 -d nginx < patches/nginx-stream-pp-var.patch \
+            || { echo "!! pp-var 补丁应用失败"; exit 1; }
+          echo "==> stream pp-var 补丁已应用 (Windows)"
+
+          # Lua 支持: LuaJIT (mingw 构建) + lua-nginx-module; 生态为纯 lua 文件拷贝
+          git clone --depth=1 https://github.com/openresty/luajit2.git
+          git clone --depth=1 https://github.com/openresty/lua-nginx-module.git
+
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
           git clone --depth=1 --recursive https://github.com/yaoweibin/ngx_http_substitutions_filter_module.git
@@ -262,9 +271,18 @@ jobs:
           git clone --depth=1 --recursive https://github.com/aperezdc/ngx-fancyindex.git
           git clone --depth=1 --recursive -b pcre2-10.42 https://github.com/PCRE2Project/pcre2.git
           git clone --depth=1 --recursive -b v1.3.2 https://github.com/madler/zlib.git
+
+          # 构建 LuaJIT (官方 MinGW 目标, 产 src/lua51.dll + 导入库)
+          echo "==> 构建 LuaJIT (mingw)"
+          make -C luajit2 mingw -j"$(nproc)"
+
+          # 纯 lua 生态 (resty-*/dkjson/cjson 垫片/socket 桥/waf, 与 Linux 包同一脚本)
+          bash scripts/install-lua-ecosystem.sh "$PWD/lua"
+
           cd pcre2
           ./autogen.sh
           cd ../nginx
+          export LUAJIT_LIB=../luajit2/src LUAJIT_INC=../luajit2/src
           ./auto/configure \
             --with-cc=gcc \
             --prefix= \
@@ -314,7 +332,8 @@ jobs:
             --add-module=../ngx_http_substitutions_filter_module \
             --add-module=../nginx-http-auth-digest \
             --add-module=../headers-more-nginx-module \
-            --add-module=../ngx-fancyindex 
+            --add-module=../ngx-fancyindex \
+            --add-module=../lua-nginx-module
           mingw32-make -j$(nproc)
           # mingw32-make install
           # 修复 Windows 可执行文件扩展名
@@ -330,6 +349,13 @@ jobs:
           mkdir -p /tmp/nginx/temp/fastcgi_temp
           mkdir -p /tmp/nginx/temp/scgi_temp
           mkdir -p /tmp/nginx/temp/uwsgi_temp
+          # lua 生态 + LuaJIT 运行时 (布局与 Linux 包一致: lua/ + luajit-share/)
+          cd "$GITHUB_WORKSPACE"
+          cp -r lua /tmp/nginx/lua
+          mkdir -p /tmp/nginx/luajit-share/lua/5.1
+          cp -r luajit2/src/jit /tmp/nginx/luajit-share/lua/5.1/jit
+          cp luajit2/src/lua51.dll /tmp/nginx/lua51.dll
+          cp config/nginx.quic.lua.conf /tmp/nginx/conf/nginx.quic.lua.conf 2>/dev/null || true
           ls /tmp/nginx/
           cd /tmp
           zip -r $GITHUB_WORKSPACE/nginx_${VERSION}_${{ matrix.suffix }}.zip nginx/
@@ -409,7 +435,7 @@ jobs:
             
             ## Included Modules
             - HTTP/3 (QUIC) support via OpenSSL (version resolved at build time, pinned per security policy — see build log; Windows excluded) + nginx native HTTP/3 module
-            - Lua scripting (LuaJIT + lua-nginx-module + resty-* ecosystem + cjson/dkjson + qist/waf) (Windows excluded)
+            - Lua scripting (LuaJIT + lua-nginx-module + resty-* ecosystem + cjson/dkjson shims + qist/waf)
             - Headers more
             - VTS (Virtual host traffic status)
             - And more...
@@ -418,7 +444,7 @@ jobs:
             - Linux / glibc (amd64, arm64) — 在 CentOS 7 (glibc 2.17) 上构建, 除 glibc 外所有依赖 (OpenSSL/PCRE2/zlib/libxml2 等) 均静态链入, 因此可运行于任何 glibc 发行版 (RHEL/CentOS/Ubuntu/Debian 等及任意更新版本)
             - Alpine / musl (amd64, arm64)
             - macOS (amd64, arm64)
-            - Windows (amd64) — no HTTP/3 (QUIC), no Lua
+            - Windows (amd64) — no HTTP/3 (QUIC)
           files: artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
