@@ -423,9 +423,10 @@ jobs:
             \cp objs/nginx.exe /tmp/nginx/nginx.exe
             # 兜底: 三方库已改为静态链接, 正常情况下这里不应有 UCRT64 DLL;
             # 若某个依赖重新变成动态, 仍随包带上以免 0xc0000135 启动失败。
+            # 末尾 || true: 全静态时 grep 无匹配返回 1, pipefail 会把步骤判失败
             ldd /tmp/nginx/nginx.exe 2>/dev/null | awk '{print $3}' | grep '^/ucrt64/bin/' | while read -r dll; do
               \cp -f "$dll" /tmp/nginx/
-            done
+            done || true
             echo "--- 随包 DLL ---"
             ls /tmp/nginx/*.dll 2>/dev/null || echo "(无, 全部静态链接)"
           fi
