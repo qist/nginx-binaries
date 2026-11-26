@@ -68,6 +68,7 @@ if [ -z "${OPENSSL_VER:-}" ] || [ "${OPENSSL_VER:-}" = "latest" ]; then
   #   4.x 不跟随: 4.0.x/4.1.0 处于 CVE-2026-121481 受影响区间, 3.6 系列 EOL。
   #   显式 export OPENSSL_VER=x.y.z 可指定其它版本。
   OPENSSL_VER="$(gh_latest_series_tag openssl/openssl openssl-3.5.)"
+  OPENSSL_VER="${OPENSSL_VER#openssl-}"   # 捕获结果含 tag 前缀, 还原成纯版本号
   if [ -z "$OPENSSL_VER" ]; then
     OPENSSL_VER="3.5.9"   # API 异常兜底: 已知良好 LTS 版本
     echo "!! openssl LTS 版本解析失败, 兜底使用 3.5.9"
