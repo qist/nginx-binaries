@@ -271,14 +271,22 @@ jobs:
           # 注: nginx_upstream_check_module 与 nginx-upsync-module 深度依赖 POSIX API
           # (srandom/S_IRUSR/lseek/ftruncate/裸 send), mingw 下无法编译, 不进 Windows 包;
           # 对应的 check 核心 patch 也只在 Linux 需要
+          # 注: nginx-upstream-dynamic-servers 依赖 ngx_log_debug 平台差异, 同样剔除
           git clone --depth=1 https://github.com/FRiCKLE/ngx_cache_purge.git
           git clone --depth=1 https://github.com/openresty/echo-nginx-module.git
           git clone --depth=1 https://github.com/evanmiller/mod_zip.git
-          git clone --depth=1 https://github.com/GUI/nginx-upstream-dynamic-servers.git
           git clone --depth=1 https://github.com/vozlt/nginx-module-vts.git
           git clone --depth=1 https://github.com/vozlt/nginx-module-sts.git
           git clone --depth=1 https://github.com/vozlt/nginx-module-stream-sts.git
           git clone --depth=1 https://github.com/arut/nginx-dav-ext-module.git
+
+          # vts 系列源码用了 BSD 风格的 uint 类型 (mingw 无此 typedef),
+          # 词边界替换为 unsigned int (\b 不会误伤 ngx_uint_t 等标识符);
+          # vts 代码里没有本地 typedef uint, 全量替换安全
+          sed -i 's/\buint\b/unsigned int/g' \
+            nginx-module-vts/src/*.h nginx-module-vts/src/*.c \
+            nginx-module-sts/src/*.h nginx-module-sts/src/*.c \
+            nginx-module-stream-sts/src/*.h nginx-module-stream-sts/src/*.c
 
           git clone --depth=1 --recursive https://github.com/simplresty/ngx_devel_kit.git
           git clone --depth=1 --recursive https://github.com/openresty/set-misc-nginx-module.git
@@ -359,7 +367,7 @@ jobs:
             --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../openssl \
             --with-openssl-opt='no-asm no-tests -D_WIN32_WINNT=0x0501' \
-            --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768 -DNGX_STREAM_PP_VAR -Wno-error=pointer-to-int-cast -Wno-error=int-to-pointer-cast -Wno-error=pointer-sign -Wno-error=unused-value" \
+            --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768 -DNGX_STREAM_PP_VAR -Wno-error=pointer-to-int-cast -Wno-error=int-to-pointer-cast -Wno-error=pointer-sign -Wno-error=unused-value -Wno-error=macro-redefined" \
             --with-ld-opt="-L/ucrt64/lib" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
@@ -370,7 +378,6 @@ jobs:
             --add-module=../ngx_cache_purge \
             --add-module=../echo-nginx-module \
             --add-module=../mod_zip \
-            --add-module=../nginx-upstream-dynamic-servers \
             --add-module=../nginx-module-vts \
             --add-module=../nginx-dav-ext-module \
             --add-module=../nginx-module-sts \
