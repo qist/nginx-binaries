@@ -359,7 +359,7 @@ jobs:
             --with-openssl-opt=enable-tls1_3 \
             --with-openssl=../openssl \
             --with-openssl-opt='no-asm no-tests -D_WIN32_WINNT=0x0501' \
-            --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768 -DNGX_STREAM_PP_VAR" \
+            --with-cc-opt="-I/ucrt64/include -I/ucrt64/include/libxml2 -I/ucrt64/include/libxslt -DFD_SETSIZE=32768 -DNGX_STREAM_PP_VAR -Wno-error=pointer-to-int-cast -Wno-error=int-to-pointer-cast -Wno-error=pointer-sign -Wno-error=unused-value" \
             --with-ld-opt="-L/ucrt64/lib" \
             --add-module=../ngx_devel_kit \
             --add-module=../set-misc-nginx-module \
