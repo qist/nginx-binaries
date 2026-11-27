@@ -109,4 +109,29 @@ if [ -d "$WORK/waf-tmp/rule-config" ]; then
   cp -r "$WORK/waf-tmp/rule-config" "$LUA_ROOT/waf/rule-config"
 fi
 
+# 上游 config.lua 把规则/日志目录写死为 /apps/nginx/conf/waf/rule-config 与
+# /apps/nginx/log/, 只适用于 waf 被放到 conf/waf 的 apps 布局。打包布局是
+# <prefix>/lua/waf/rule-config + <prefix>/logs, 直接跑会因规则文件读不到而
+# 静默放行所有攻击请求。这里按实际文件存在性回退到 <prefix> 布局。
+if [ -f "$LUA_ROOT/waf/config.lua" ] && ! grep -q "NGX_WAF_LAYOUT_AUTODETECT" "$LUA_ROOT/waf/config.lua"; then
+  cat >> "$LUA_ROOT/waf/config.lua" <<'LUA'
+
+-- NGX_WAF_LAYOUT_AUTODETECT
+-- 默认 config_rule_dir/config_log_dir 指向 /apps/nginx/*, 规则目录不可用时
+-- 回退到 prefix 下的打包布局 (Windows / Linux 通用), 避免 WAF 静默失效。
+local function __ngx_waf_exists(p)
+    local f = io.open(p, "r")
+    if f then f:close(); return true end
+    return false
+end
+if not __ngx_waf_exists(config_rule_dir .. "/url.rule") then
+    local __p = ngx.config.prefix()
+    if __ngx_waf_exists(__p .. "lua/waf/rule-config/url.rule") then
+        config_rule_dir = __p .. "lua/waf/rule-config"
+        config_log_dir = __p .. "logs/"
+    end
+end
+LUA
+fi
+
 echo "==> lua 生态安装完成 -> $LUA_ROOT"
